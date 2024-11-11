@@ -1,7 +1,6 @@
 from typing import List
 
 from .context import Context
-from .text import TextPlus
 
 
 CONTEXT_OUTER_PROMPT = "{context_str}\n\nValid Keys: {valid_keys}"
@@ -11,8 +10,7 @@ CONTEXT_INNER_PROMPT = "{name}: {text}\nFrom {citation}"
 CONTEXT_INNER_PROMPT_WITH_QUOTE = "{name}: {text}\nRelevant Quotes:\n{quotes}\nFrom {citation}"
 
 
-class InnerContext:
-    chunks: List[TextPlus] = []
+class Cache:
     summaries: List[Context] = []
     max_sources: int = 5
 

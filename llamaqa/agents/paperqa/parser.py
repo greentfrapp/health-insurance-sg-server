@@ -3,7 +3,6 @@ import re
 
 from llama_index.core.agent.react.output_parser import (
     action_input_parser,
-    # extract_tool_use,
     extract_final_response,
     parse_action_reasoning_step,
 )
@@ -54,11 +53,11 @@ def parse_action_reasoning_step(output: str) -> ActionReasoningStep:
     )
 
 
-class ReActOutputParser(BaseOutputParser):
-    """ReAct Output parser."""
+class PaperQAOutputParser(BaseOutputParser):
+    """PaperQA Output parser."""
 
     def parse(self, output: str, is_streaming: bool = False) -> BaseReasoningStep:
-        """Parse output from ReAct agent.
+        """Parse output from PaperQA agent.
 
         We expect the output to be in one of the following formats:
         1. If the agent need to use a tool to answer the question:
@@ -73,7 +72,7 @@ class ReActOutputParser(BaseOutputParser):
             Answer: <answer>
             ```
         """
-        if "Thought:" not in output:
+        if "Thought:" not in output and "Action:" not in output:
             # NOTE: handle the case where the agent directly outputs the answer
             # instead of following the thought-answer format
             return ResponseReasoningStep(
@@ -109,5 +108,5 @@ Action Input:
 {"query": "NTUC Income's Enhanced IncomeShield plan details, including coverage, benefits, and costs"}
 ```
 """
-    parser = ReActOutputParser()
+    parser = PaperQAOutputParser()
     parser.parse(text)

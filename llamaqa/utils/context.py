@@ -5,7 +5,7 @@ from pydantic import (
 )
 from typing import Dict, List
 
-from .text import TextPlus
+from .text import Text
 
 
 class Context(BaseModel):
@@ -14,7 +14,7 @@ class Context(BaseModel):
     model_config = ConfigDict(extra="allow")
 
     context: str = Field(description="Summary of the text with respect to a question.")
-    text: TextPlus
+    text: Text
     score: int = 5
     points: List[Dict[str, str]] = []
 

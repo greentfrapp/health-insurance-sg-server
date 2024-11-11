@@ -1,28 +1,17 @@
-import os
+from typing import List
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import nest_asyncio
 
-from llama_index.core import PromptTemplate
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
+
 from llama_index.core.base.llms.types import ChatMessage
-from llama_index.llms.litellm import LiteLLM
-import os
 
-from llamaqa.llms.embedding_model import LiteLLMEmbeddingModel
-from llamaqa.llms.litellm_model import LiteLLMModel
-from llamaqa.store.supabase_store import SupabaseStore
-from llamaqa.tools.paperqa_tools import PaperQAToolSpec, tell_llm_about_failure_in_extract_reasoning_step
-from llamaqa.utils.inner_context import InnerContext
-from llamaqa.utils.prompts import PAPERQA_SYSTEM_PROMPT
-from llamaqa.utils.react_agent import ReActOutputParser
-
-from llamaqa.agents.paperqa import PaperQAAgent
-from llamaqa.utils.stream import stream_thoughts
-from llamaqa.utils.api import format_response
+import llamaqa
+from llamaqa.agents.paperqa.base import PaperQAAgent
 
 
 load_dotenv()
@@ -45,95 +34,47 @@ app.add_middleware(
 
 class QueryPayload(BaseModel):
     query: str
-
-
-# Initialize models
-embedding_model = LiteLLMEmbeddingModel(
-    name="gemini/text-embedding-004"
-)
-summary_llm_model = LiteLLMModel(
-    name="gemini/gemini-1.5-flash-002"
-)
-store = SupabaseStore(
-    supabase_url=os.environ["SUPABASE_URL"],
-    supabase_key=os.environ["SUPABASE_SERVICE_KEY"],
-)
-context = InnerContext()
-toolspec = PaperQAToolSpec(
-    store=store,
-    context=context,
-    embedding_model=embedding_model,
-    summary_llm_model=summary_llm_model,
-)
-do_not_have_access_phrases = [
-    "need more information",
-    "do not have access",
-    "need access",
-]
-agent = None
-
-
-@app.get("/init")
-def get_init_agent():
-    llm = LiteLLM("gemini/gemini-1.5-flash-002")
-    # llm = OpenAI("gpt-4o-mini")
-    # llm = OpenAI("gpt-3.5-turbo-instruct")
-    
-    global agent
-    agent = PaperQAAgent.from_tools(
-        toolspec.to_tool_list(),
-        llm=llm,
-        verbose=True,
-        # max_iterations=20,
-        handle_reasoning_failure_fn=tell_llm_about_failure_in_extract_reasoning_step,
-        output_parser=ReActOutputParser(),
-    )
-    agent.update_prompts({
-        "agent_worker:system_prompt": PromptTemplate(PAPERQA_SYSTEM_PROMPT)
-    })
+    history: List[ChatMessage] = []
 
 
 @app.get("/status")
 def get_status():
-    global agent
-    if agent is None:
-        get_init_agent()
-    return {
-        "history_length": len(agent.memory.chat_store.to_dict()["store"]["chat_history"]),
-    }
+    return {"version": llamaqa.__version__}
 
 
-@app.post("/query")
-def post_query(payload: QueryPayload):
-    global agent
-
-    response = agent.chat(f"{payload.query}\nRemember to call gather_evidence if the user is asking about insurance, especially if you are citing anything.")
-    
-    memory_dict = agent.memory.chat_store.to_dict()["store"]["chat_history"]
-    memory_dict = [ChatMessage(**i) for i in memory_dict]
-    memory_dict[-2].content = payload.query
-    agent.memory.set(memory_dict)
-
-    # Format response
-    return format_response(payload.query, str(response), context)
-
-
-def stream_query_helper(query: str):
-    global agent
-    stream = stream_thoughts(agent, context, query)
+# Helper function for logging
+def stream_thoughts_helper(
+    agent: PaperQAAgent,
+    query: str,
+    history: List[ChatMessage] = [],
+):
+    agent.memory.set(history)
+    stream = agent.stream_thoughts(query)
     for chunk in stream:
-        print([chunk])
+        print(f"\033[38;5;228m{chunk}\033[0m")
         yield(chunk)
 
 
 @app.post("/stream_query")
 def post_stream_query(payload: QueryPayload):
-    return StreamingResponse(stream_query_helper(payload.query), media_type="text/event-stream")
+    agent = PaperQAAgent.from_config()
+    return StreamingResponse(
+        stream_thoughts_helper(agent, payload.query, payload.history),
+        media_type="text/event-stream",
+    )
 
 
 if __name__ == "__main__":
-    status = get_status()
-    print(status)
-    post_query(QueryPayload(query="Hello"))
-    status = get_status()
-    print(status)
+    agent = PaperQAAgent.from_config()
+    def test_stream_thoughts(query: str):
+        response = stream_thoughts_helper(agent, query)
+        for _ in response:
+            pass
+    response = test_stream_thoughts("lasik coverage for ntuc income")
+    # response = test_stream_thoughts("what was my last question")
+    # response = test_stream_thoughts("how about for aia")
+    # response = test_stream_thoughts("summarize all of that in a table format")
+    # response = test_stream_thoughts("Point form instead")
+    # response = test_stream_thoughts("Tell me about prosthetic coverage for ntuc income. Give your answer in point form")
+    # response = test_stream_thoughts("do the same for aia")
+    agent.pprint_memory()

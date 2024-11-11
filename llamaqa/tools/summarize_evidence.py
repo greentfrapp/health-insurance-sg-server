@@ -2,10 +2,10 @@ from functools import partial
 from typing import Any, Coroutine, List
 import asyncio
 
-from llamaqa.store.store import VectorStore
-from llamaqa.utils.inner_context import InnerContext
-from llamaqa.utils.text import TextPlus
-from llamaqa.utils.utils import (
+from ..store.store import VectorStore
+from ..utils.cache import Cache
+from ..utils.text import Text
+from ..utils.utils import (
     llm_parse_json,
     map_fxn_summary,
 )
@@ -47,10 +47,10 @@ async def gather_with_concurrency(n: int, coros: list[Coroutine]) -> list[Any]:
 
 
 async def summarize_evidence(
-    context: InnerContext,
+    cache: Cache,
     store: VectorStore,
     query: str,
-    chunks: List[TextPlus] = [],
+    chunks: List[Text] = [],
     summary_llm_model = None,
 ):
     prompt_runner = partial(
@@ -72,8 +72,8 @@ async def summarize_evidence(
                 },
                 parser=llm_parse_json,
             )
-            for m in (chunks if len(chunks) else context.chunks)
+            for m in (chunks if len(chunks) else cache.chunks)
         ],
     )
-    context.summaries = [summary for summary, _ in results]
+    cache.summaries = [summary for summary, _ in results]
     return f"Generated {len(results)} summaries"

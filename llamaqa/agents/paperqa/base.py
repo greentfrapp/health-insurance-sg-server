@@ -1,56 +1,57 @@
 from typing import (
-    Any,
     Callable,
-    List,
     Optional,
     Sequence,
-    Union,
+    cast,
 )
+import json
+import os
+import uuid
 
-from llama_index.core.agent.react.formatter import ReActChatFormatter
-from llama_index.core.agent.react.output_parser import ReActOutputParser
-from llama_index.core.agent.react.step import ReActAgentWorker
-from llama_index.core.agent.runner.base import AgentRunner
-from llama_index.core.agent.types import (
-    BaseAgent,
-    BaseAgentWorker,
-    Task,
-    TaskStep,
-    TaskStepOutput,
+from llama_index.core import PromptTemplate
+from llama_index.core.agent import AgentRunner
+from llama_index.core.agent.react import (
+    ReActAgent,
+    ReActChatFormatter,
 )
-from llama_index.core.base.llms.types import ChatMessage
-from llama_index.core.callbacks import (
-    CallbackManager,
-    CBEventType,
-    EventPayload,
-    trace_method,
-)
-from llama_index.core.chat_engine.types import (
-    AGENT_CHAT_RESPONSE_TYPE,
-    AgentChatResponse,
-    ChatResponseMode,
-    StreamingAgentChatResponse,
-)
+from llama_index.core.agent.react.types import ActionReasoningStep
+from llama_index.core.base.llms.types import ChatMessage, MessageRole
+from llama_index.core.callbacks import CallbackManager
 from llama_index.core.instrumentation import get_dispatcher
-from llama_index.core.instrumentation.events.agent import (
-    AgentRunStepEndEvent,
-    AgentRunStepStartEvent,
-    AgentChatWithStepStartEvent,
-    AgentChatWithStepEndEvent,
-)
 from llama_index.core.llms.llm import LLM
+from llama_index.core.memory.chat_memory_buffer import ChatMemoryBuffer
 from llama_index.core.memory.types import BaseMemory
 from llama_index.core.objects.base import ObjectRetriever
 from llama_index.core.tools import BaseTool, ToolOutput
+from llama_index.llms.litellm import LiteLLM
 
-from llama_index.core.agent import ReActAgent
+from llama_index.core.agent.react.step import (
+    add_user_step_to_reasoning,
+)
 
+from .parser import PaperQAOutputParser
+from .prompts import PAPERQA_SYSTEM_PROMPT
+from .utils import (
+    infer_stream_chunk_is_final,
+    format_response,
+    tell_llm_about_failure_in_extract_reasoning_step,
+)
 from .step import PaperQAAgentWorker
+from ...llms import (
+    LiteLLMEmbeddingModel,
+    LiteLLMModel,
+)
+from ...store.supabase_store import SupabaseStore
+from ...tools.paperqa_tools import PaperQAToolSpec
+from ...utils.cache import Cache
 
 
 dispatcher = get_dispatcher(__name__)
 
+
 class PaperQAAgent(ReActAgent):
+    toolspec: PaperQAToolSpec
+
     def __init__(
         self,
         tools: Sequence[BaseTool],
@@ -58,7 +59,7 @@ class PaperQAAgent(ReActAgent):
         memory: BaseMemory,
         max_iterations: int = 10,
         react_chat_formatter: Optional[ReActChatFormatter] = None,
-        output_parser: Optional[ReActOutputParser] = None,
+        output_parser: Optional[PaperQAOutputParser] = None,
         callback_manager: Optional[CallbackManager] = None,
         verbose: bool = False,
         tool_retriever: Optional[ObjectRetriever[BaseTool]] = None,
@@ -85,6 +86,7 @@ class PaperQAAgent(ReActAgent):
             verbose=verbose,
             handle_reasoning_failure_fn=handle_reasoning_failure_fn,
         )
+
         AgentRunner.__init__(
             self,
             step_engine,
@@ -93,108 +95,175 @@ class PaperQAAgent(ReActAgent):
             callback_manager=callback_manager,
             verbose=verbose,
         )
+        self.update_prompts({
+            "agent_worker:system_prompt": PromptTemplate(PAPERQA_SYSTEM_PROMPT)
+        })
 
-    @dispatcher.span
-    def _run_step(
-        self,
-        task_id: str,
-        step: Optional[TaskStep] = None,
-        input: Optional[str] = None,
-        mode: ChatResponseMode = ChatResponseMode.WAIT,
-        **kwargs: Any,
-    ) -> TaskStepOutput:
-        """Execute step."""
-        task = self.state.get_task(task_id)
-        step_queue = self.state.get_step_queue(task_id)
-        step = step or step_queue.popleft()
-        if input is not None:
-            step.input = input
+    @classmethod
+    def from_config(cls, **kwargs):
+        supabase_url = kwargs.get("supabase_url", os.environ["SUPABASE_URL"])
+        supabase_service_key = kwargs.get("supabase_service_key", os.environ["SUPABASE_SERVICE_KEY"])
+        embedding_model_name = kwargs.get("embedding_model", "gemini/text-embedding-004")
+        summary_llm_model_name = kwargs.get("summary_llm_model", "gemini/gemini-1.5-flash-002")
+        llm_model_name = kwargs.get("llm_model", "gemini/gemini-1.5-flash-002")
 
-        dispatcher.event(
-            AgentRunStepStartEvent(task_id=task_id, step=step, input=input)
+        store = SupabaseStore(
+            supabase_url=supabase_url,
+            supabase_key=supabase_service_key,
+        )
+        cache = Cache()
+        embedding_model = LiteLLMEmbeddingModel(name=embedding_model_name)
+        summary_llm_model = LiteLLMModel(name=summary_llm_model_name)
+        toolspec = PaperQAToolSpec(
+            store=store,
+            cache=cache,
+            embedding_model=embedding_model,
+            summary_llm_model=summary_llm_model,
+        )
+        llm = LiteLLM(llm_model_name)
+        memory = ChatMemoryBuffer.from_defaults(
+            chat_history=[],
+            llm=llm,
         )
 
-        if self.verbose:
-            print(f"> Running step {step.step_id}. Step input: {step.input}")
+        self = cls(
+            tools=toolspec.to_tool_list(),
+            tool_retriever=None,
+            llm=llm,
+            memory=memory,
+            max_iterations=10,
+            react_chat_formatter=None,
+            output_parser=PaperQAOutputParser(),
+            callback_manager=None,
+            verbose=True,
+            context=None,
+            handle_reasoning_failure_fn=tell_llm_about_failure_in_extract_reasoning_step,
+        )
+        self.toolspec = toolspec
+        return self
 
-        # TODO: figure out if you can dynamically swap in different step executors
-        # not clear when you would do that by theoretically possible
+    def stream_thoughts(self, query: str):
+        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="Remember to call gather_evidence if the user is asking about Singapore health insurance, especially if you are citing anything. Otherwise, just answer as per usual. Please avoid questions unrelated to Singapore health insurance but explain. You can ask the user to elaborate or clarify."))
+        self.memory.put(ChatMessage(role=MessageRole.USER, content=query))
 
-        if mode == ChatResponseMode.WAIT:
-            cur_step_output = self.agent_worker.run_step(step, task, **kwargs)
-        elif mode == ChatResponseMode.STREAM:
-            cur_step_output = self.agent_worker.stream_step(step, task, **kwargs)
-        else:
-            raise ValueError(f"Invalid mode: {mode}")
-        # append cur_step_output next steps to queue
-        next_steps = cur_step_output.next_steps
-        step_queue.extend(next_steps)
+        worker = cast(PaperQAAgentWorker, self.agent_worker)
+        task = self.create_task(query)
 
-        # add cur_step_output to completed steps
-        completed_steps = self.state.get_completed_steps(task_id)
-        completed_steps.append(cur_step_output)
+        self.toolspec.current_task_id = task.task_id.split("-")[0]
 
-        dispatcher.event(AgentRunStepEndEvent(step_output=cur_step_output))
-        return cur_step_output
-
-    @dispatcher.span
-    def _chat(
-        self,
-        message: str,
-        chat_history: Optional[List[ChatMessage]] = None,
-        tool_choice: Union[str, dict] = "auto",
-        mode: ChatResponseMode = ChatResponseMode.WAIT,
-    ) -> AGENT_CHAT_RESPONSE_TYPE:
-        """Chat with step executor."""
-        if chat_history is not None:
-            self.memory.set(chat_history)
-        task = self.create_task(message)
-
-        result_output = None
-        dispatcher.event(AgentChatWithStepStartEvent(user_msg=message))
+        iters = 0
+        max_iters = 10
+        step_queue = self.state.get_step_queue(task.task_id)
+        step = step_queue.popleft()
         while True:
-            # TODO: This stage needs to start yielding thoughts and action outputs
-            # pass step queue in as argument, assume step executor is stateless
-            cur_step_output = self._run_step(
-                task.task_id, mode=mode, tool_choice=tool_choice
+            iters += 1
+
+            if step.input is not None:
+                add_user_step_to_reasoning(
+                    step,
+                    task.extra_state["new_memory"],
+                    task.extra_state["current_reasoning"],
+                    verbose=worker._verbose,
+                )
+            # TODO: see if we want to do step-based inputs
+            tools = worker.get_tools(task.input)
+
+            input_chat = worker._react_chat_formatter.format(
+                tools,
+                chat_history=task.memory.get(input=task.input)
+                + task.extra_state["new_memory"].get_all(),
+                current_reasoning=task.extra_state["current_reasoning"],
             )
 
-            if cur_step_output.is_last:
-                result_output = cur_step_output
+            chat_stream = worker._llm.stream_chat(input_chat)
+
+            response_buffer = ""
+            for chunk in chat_stream:
+                value = chunk.message.content[len(response_buffer):]
+                yield(value)
+                response_buffer += value
+                is_done = infer_stream_chunk_is_final(
+                    response_buffer, []
+                )
+            
+            if not is_done:
+                tools = worker.get_tools(task.input)
+                tools_dict = {
+                    tool.metadata.get_name(): tool for tool in tools
+                }
+                
+                # Extract tool to yield
+                try:
+                    _, current_reasoning, is_done = worker._extract_reasoning_step(
+                        response_buffer, is_streaming=True
+                    )
+                    reasoning_step = cast(ActionReasoningStep, current_reasoning[-1])
+                    if reasoning_step.action in tools_dict:
+                        thought = f"Action Desc: {tools_dict[reasoning_step.action].fn.__output_desc__.format(**reasoning_step.action_input)}"
+                        # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
+                        yield(thought)
+                except ValueError:
+                    pass
+
+                # given react prompt outputs, call tools or return response
+                reasoning_steps, is_done = worker._process_actions(
+                    task, tools=tools, output=response_buffer, is_streaming=True
+                )
+                if reasoning_steps[-1].observation.startswith("Found"):
+                    thought = "Action Output:" + reasoning_steps[-1].observation.split(".")[0]
+                    # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
+                    yield(thought)
+                task.extra_state["current_reasoning"].extend(reasoning_steps)
+
+                step = step.get_next_step(
+                    step_id=str(uuid.uuid4()),
+                    input=None,
+                )
+            if is_done:
+                break
+            else:
+                if "\nThought: " in response_buffer:
+                    response_buffer = response_buffer.split("\nThought: ")[0]
+                if "```Thought: " in response_buffer:
+                    response_buffer = response_buffer.split("```Thought: ")[0] + "```"
+                self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=response_buffer))
+            if iters >= max_iters:
                 break
 
-            # ensure tool_choice does not cause endless loops
-            tool_choice = "auto"
+        final_response = response_buffer.split("Answer:")[-1].strip()
+        self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=final_response))
 
-        result = self.finalize_response(
-            task.task_id,
-            result_output,
-        )
-        dispatcher.event(AgentChatWithStepEndEvent(response=result))
-        return result
+        recent_history = []
+        for i, message in enumerate(self.memory.chat_store.to_dict()["store"]["chat_history"][::-1]):
+            if message["role"] == "assistant":
+                if i != 0:
+                    message["hidden"] = True
+                else:
+                    message["formattedContent"] = format_response(
+                        query,
+                        final_response,
+                        self.toolspec,
+                    )
+                recent_history.insert(0, message)
+            else:
+                break
 
-    @dispatcher.span
-    @trace_method("chat")
-    def stream_thoughts_and_chat(
-        self,
-        message: str,
-        chat_history: Optional[List[ChatMessage]] = None,
-        tool_choice: Optional[Union[str, dict]] = None,
-    ):
-        if tool_choice is None:
-            tool_choice = self.default_tool_choice
-        with self.callback_manager.event(
-            CBEventType.AGENT_STEP,
-            payload={EventPayload.MESSAGES: [message]},
-        ) as e:
-            chat_response = self._chat(
-                message, chat_history, tool_choice, mode=ChatResponseMode.STREAM
-            )
-            assert isinstance(chat_response, StreamingAgentChatResponse) or (
-                isinstance(chat_response, AgentChatResponse)
-                and chat_response.is_dummy_stream
-            )
-            e.on_end(payload={EventPayload.RESPONSE: chat_response})
+        yield("Final Response: " + json.dumps(recent_history))
 
-        return chat_response  # type: ignore
+    def pprint_memory(self):
+        class sty:
+            WHITE = '\033[37m'
+            CYAN = '\033[38;5;51m'
+            MAGENTA = '\033[38;5;207m'
+            BOLD = '\033[1m'
+            RESET = '\033[0m'
 
+        for memory in self.memory.chat_store.store["chat_history"]:
+            if memory.role == MessageRole.USER:
+                color = sty.CYAN
+            elif memory.role == MessageRole.ASSISTANT:
+                color = sty.MAGENTA
+            else:
+                color = sty.WHITE
+            formatted_str = f"{sty.BOLD}{color}{str(memory.role.value.upper())}{sty.RESET}{color}: {memory.content}{sty.RESET}"
+            print(formatted_str)
