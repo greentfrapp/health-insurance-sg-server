@@ -10,6 +10,7 @@ from fastapi.responses import StreamingResponse
 
 from llama_index.core.base.llms.types import ChatMessage
 
+import llamaqa
 from llamaqa.agents.paperqa.base import PaperQAAgent
 
 
@@ -38,7 +39,7 @@ class QueryPayload(BaseModel):
 
 @app.get("/status")
 def get_status():
-    return
+    return {"version": llamaqa.__version__}
 
 
 # Helper function for logging
