@@ -10,7 +10,7 @@ import numpy as np
 from .store import VectorStore, cosine_similarity
 from ..utils.doc import Doc
 from ..utils.embeddable import Embeddable
-from ..utils.text import Text, TextPlus
+from ..utils.text import Text
 
 
 class SupabaseStore(VectorStore):
@@ -31,7 +31,7 @@ class SupabaseStore(VectorStore):
 
     async def similarity_search(
         self, query: str, k: int, embedding_model: Any
-    ) -> tuple[Sequence[TextPlus], list[float]]:
+    ) -> tuple[Sequence[Text], list[float]]:
         supabase = await create_async_client(self.supabase_url, self.supabase_key)
         
         if not self.texts: 
@@ -67,7 +67,7 @@ class SupabaseStore(VectorStore):
                 pages = chunk.get("pages")
                 pages_str = " pages " + f"{pages[0]}-{pages[-1]}"
                 self.texts.append(
-                    TextPlus(
+                    Text(
                         text=chunk.get("text"),
                         name=docname + pages_str,
                         doc=Doc(
@@ -86,12 +86,7 @@ class SupabaseStore(VectorStore):
         if k == 0:
             return [], []
 
-        # this will only affect models that embedding prompts
-        # embedding_model.set_mode(EmbeddingModes.QUERY)
-
         np_query = np.array((await embedding_model.embed_documents([query]))[0])
-
-        # embedding_model.set_mode(EmbeddingModes.DOCUMENT)
 
         similarity_scores = cosine_similarity(
             np_query.reshape(1, -1), self._embeddings_matrix

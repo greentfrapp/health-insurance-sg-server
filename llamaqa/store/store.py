@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from llamaqa.utils.text import TextPlus
+from llamaqa.utils.text import Text
 
 
 def cosine_similarity(a, b):
@@ -48,7 +48,7 @@ class VectorStore(BaseModel, ABC):
 
     async def max_marginal_relevance_search(
         self, query: str, k: int, fetch_k: int, embedding_model: Any
-    ) -> tuple[Sequence[TextPlus], list[float]]:
+    ) -> tuple[Sequence[Text], list[float]]:
         """Vectorized implementation of Maximal Marginal Relevance (MMR) search.
 
         Args:

@@ -8,7 +8,7 @@ from typing import Any
 
 from llamaqa.llms.llm_result import LLMResult
 from .context import Context
-from .text import Text, TextPlus
+from .text import Text
 
 
 def is_coroutine_callable(obj):
@@ -83,7 +83,7 @@ def llm_parse_json(text: str) -> dict:
 
 
 async def map_fxn_summary(
-    text: TextPlus,
+    text: Text,
     question: str,
     prompt_runner: Any | None,
     extra_prompt_data: dict[str, str] | None = None,
@@ -152,29 +152,13 @@ async def map_fxn_summary(
     return (
         Context(
             context=context,
-            text=TextPlus.from_text(Text(
+            text=Text(
                 text=text.text,
                 name=text.name,
                 doc=text.doc.__class__(**text.doc.model_dump(exclude={"embedding"})),
-            )),
+            ),
             score=score,  # pylint: disable=possibly-used-before-assignment
             **extras,
         ),
         llm_result,
     )
-
-
-def name_in_text(name: str, text: str) -> bool:
-    sname = name.strip()
-    pattern = rf"\b({re.escape(sname)})\b(?!\w)"
-    return bool(re.search(pattern, text))
-
-
-def name_pos_in_text(name: str, text: str) -> int:
-    sname = name.strip()
-    pattern = rf"\b({re.escape(sname)})\b(?!\w)"
-    match = re.search(pattern, text)
-    if match:
-        return match.start()
-    else:
-        return -1

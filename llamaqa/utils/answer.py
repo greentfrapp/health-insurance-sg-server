@@ -7,10 +7,9 @@ from pydantic import (
 from typing import Any
 from uuid import UUID, uuid4
 
-from llamaqa.llms.llm_result import LLMResult
 from .context import Context
 from .doc import Doc
-from .text import TextPlus
+from .text import Text
 
 
 class Answer(BaseModel):
@@ -72,7 +71,7 @@ class Answer(BaseModel):
             Context(
                 context=c.context,
                 score=c.score,
-                text=TextPlus(
+                text=Text(
                     text="",
                     **c.text.model_dump(exclude={"text", "embedding", "doc"}),
                     doc=Doc(**c.text.doc.model_dump(exclude={"embedding"})),
