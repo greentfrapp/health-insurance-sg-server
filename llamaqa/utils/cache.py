@@ -29,7 +29,7 @@ class Cache:
             CONTEXT_INNER_PROMPT_WITH_QUOTE.format(
                 name=c.text.name,
                 text=c.context,
-                quotes="\n".join(f"quote{i+1}: \"{p['quote']}\"" for i, p in enumerate(c.points)),
+                quotes="\n".join(f"quote{i+1}: \"{p.quote}\"" for i, p in enumerate(c.points)),
                 citation=c.text.doc.citation,
                 **(c.model_extra or {}),
             )

@@ -1,61 +1,37 @@
 """PaperQA agent worker"""
 
-import asyncio
 import json
 import uuid
-from functools import partial
 from typing import (
-    Any,
-    AsyncGenerator,
     Dict,
-    Generator,
     List,
-    Optional,
     Sequence,
     Tuple,
     cast,
-    Callable,
 )
 
-from llama_index.core.agent.react.formatter import ReActChatFormatter
-from llama_index.core.agent.react.output_parser import ReActOutputParser
 from llama_index.core.agent.react.types import (
     ActionReasoningStep,
     BaseReasoningStep,
     ObservationReasoningStep,
-    ResponseReasoningStep,
 )
 from llama_index.core.agent.types import (
-    BaseAgentWorker,
     Task,
     TaskStep,
     TaskStepOutput,
 )
-from llama_index.core.base.llms.types import MessageRole
 from llama_index.core.callbacks import (
-    CallbackManager,
     CBEventType,
     EventPayload,
-    trace_method,
 )
 from llama_index.core.chat_engine.types import (
     AGENT_CHAT_RESPONSE_TYPE,
-    AgentChatResponse,
-    StreamingAgentChatResponse,
 )
-from llama_index.core.base.llms.types import ChatMessage, ChatResponse
+from llama_index.core.base.llms.types import ChatResponse
 from llama_index.core.instrumentation import get_dispatcher
 from llama_index.core.instrumentation.events.agent import AgentToolCallEvent
-from llama_index.core.llms.llm import LLM
-from llama_index.core.memory.chat_memory_buffer import ChatMemoryBuffer
-from llama_index.core.memory.types import BaseMemory
-from llama_index.core.objects.base import ObjectRetriever
-from llama_index.core.prompts.base import PromptTemplate
-from llama_index.core.prompts.mixin import PromptDictType
-from llama_index.core.settings import Settings
-from llama_index.core.tools import BaseTool, ToolOutput, adapt_to_async_tool
+from llama_index.core.tools import ToolOutput
 from llama_index.core.tools.types import AsyncBaseTool
-from llama_index.core.types import Thread
 from llama_index.core.utils import print_text
 
 

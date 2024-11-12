@@ -6,11 +6,42 @@ from pydantic import (
 )
 from uuid import UUID, uuid4
 import contextvars
+import json
+import logging
+import re
 
 import litellm
 
 
+logger = logging.getLogger(__name__)
+
+
 cvar_answer_id = contextvars.ContextVar[UUID | None]("answer_id", default=None)
+
+
+def llm_parse_json(text: str) -> dict:
+    """Read LLM output and extract JSON data from it."""
+    # fetch from markdown ```json if present
+    ptext = text.strip().split("```json")[-1].split("```")[0]
+    # split anything before the first { after the last }
+    ptext = ("{" + ptext.split("{", 1)[-1]).rsplit("}", 1)[0] + "}"
+
+    def escape_newlines(match: re.Match) -> str:
+        return match.group(0).replace("\n", "\\n")
+
+    # Match anything between double quotes
+    # including escaped quotes and other escaped characters.
+    # https://regex101.com/r/VFcDmB/1
+    pattern = r'"(?:[^"\\]|\\.)*"'
+    ptext = re.sub(pattern, escape_newlines, ptext)
+    try:
+        return json.loads(ptext)
+    except json.JSONDecodeError as e:
+        raise ValueError(
+            f"Failed to parse JSON from text {text!r}. Your model may not be capable of"
+            " supporting JSON output or our parsing technique could use some work. Try"
+            " a different model or specify `Settings(prompts={'use_json': False})`"
+        ) from e
 
 
 class LLMResult(BaseModel):
@@ -66,3 +97,6 @@ class LLMResult(BaseModel):
             except KeyError:
                 logger.warning(f"Could not find cost for model {self.model}.")
         return 0.0
+
+    def to_json(self):
+        return llm_parse_json(self.text)
