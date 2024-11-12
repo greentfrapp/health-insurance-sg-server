@@ -94,7 +94,8 @@ async def gather_evidence(
     else:
         matches = (
             await store.max_marginal_relevance_search(
-                query, k=k, fetch_k=2 * k, embedding_model=embedding_model
+                query, k=k, fetch_k=2 * k, embedding_model=embedding_model,
+                policies=[policy],
             )
         )[0]
 
