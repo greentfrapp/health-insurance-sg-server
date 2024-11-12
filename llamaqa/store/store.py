@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from llamaqa.utils.text import Text
+from llamaqa.reader.doc import Text
 
 
 def cosine_similarity(a, b):

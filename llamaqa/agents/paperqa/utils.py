@@ -135,7 +135,7 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
         context = cast(Context, response.bib[docname])
         quote = None
         if " quote" in r:
-            quote = context.points[int(r.split(" quote")[1]) - 1]["quote"]
+            quote = context.points[int(r.split(" quote")[1]) - 1].quote
         references.append({
             "id": r,
             "filepath": context.text.doc.filepath,

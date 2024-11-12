@@ -70,7 +70,7 @@ if __name__ == "__main__":
         response = stream_thoughts_helper(agent, query)
         for _ in response:
             pass
-    response = test_stream_thoughts("lasik coverage for ntuc income")
+    response = test_stream_thoughts("summarize aia gold")
     # response = test_stream_thoughts("what was my last question")
     # response = test_stream_thoughts("how about for aia")
     # response = test_stream_thoughts("summarize all of that in a table format")

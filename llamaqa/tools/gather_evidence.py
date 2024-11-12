@@ -1,8 +1,8 @@
 from functools import partial
-from typing import Any, Coroutine, cast
+from typing import Any, Coroutine, Optional, cast
 import asyncio
 
-from ..store.store import VectorStore
+from ..store.supabase_store import SupabaseStore
 from ..utils.cache import Cache
 from ..utils.context import Context
 from ..utils.utils import (
@@ -52,8 +52,9 @@ async def gather_with_concurrency(n: int, coros: list[Coroutine]) -> list[Any]:
 
 async def gather_evidence(
     cache: Cache,
-    store: VectorStore,
-    query: str,
+    store: SupabaseStore,
+    query: Optional[str] = None,
+    policy: Optional[str] = None,
     k: int = 5,
     mmr_lambda: float = 0.9,
     embedding_model = None,
@@ -76,38 +77,55 @@ async def gather_evidence(
     """
     
     store.mmr_lambda = mmr_lambda
-    matches = (
-        await store.max_marginal_relevance_search(
-            query, k=k, fetch_k=2 * k, embedding_model=embedding_model
-        )
-    )[0]
 
-    prompt_runner = partial(
-        summary_llm_model.run_prompt,
-        SUMMARY_JSON_PROMPT,
-        system_prompt=SUMMARY_JSON_SYSTEM_PROMPT,
-    )
+    if query is None and policy is None:
+        raise ValueError("At least one of query or policy must have a non-None value")
 
-    results = await gather_with_concurrency(
-        n=4,
-        coros=[
-            map_fxn_summary(
-                text=m,
-                question=query,
-                prompt_runner=prompt_runner,
-                extra_prompt_data={
-                    "summary_length": "about 100 words",
-                    "citation": f"{m.name}: {m.doc.citation}",
-                },
-                parser=llm_parse_json,
+    # If query is None, retrieve all info about given policy
+    if query is None:
+        matches = await store.get_all_policy_info([policy])
+        summaries = [Context(
+            context=match.summary,
+            text=match,
+            score=5,
+            points=match.points,
+        ) for match in matches]
+    # Use vector retrieval
+    else:
+        matches = (
+            await store.max_marginal_relevance_search(
+                query, k=k, fetch_k=2 * k, embedding_model=embedding_model,
+                policies=[policy],
             )
-            for m in matches
-        ],
-    )
-    summaries = [cast(Context, summary) for summary, _ in results]
-    for summary in summaries:
-        summary.text.name = prefix + summary.text.name
-        summary.text.doc.docname = prefix + summary.text.doc.docname
+        )[0]
+
+        prompt_runner = partial(
+            summary_llm_model.run_prompt,
+            SUMMARY_JSON_PROMPT,
+            system_prompt=SUMMARY_JSON_SYSTEM_PROMPT,
+        )
+
+        results = await gather_with_concurrency(
+            n=4,
+            coros=[
+                map_fxn_summary(
+                    text=m,
+                    question=query,
+                    prompt_runner=prompt_runner,
+                    extra_prompt_data={
+                        "summary_length": "about 100 words",
+                        "citation": f"{m.name}: {m.doc.citation}",
+                    },
+                    parser=llm_parse_json,
+                )
+                for m in matches
+            ],
+        )
+        summaries = [cast(Context, summary) for summary, _ in results]
+        for summary in summaries:
+            summary.text.name = prefix + summary.text.name
+            summary.text.doc.docname = prefix + summary.text.doc.docname
+
     cache.summaries = summaries
 
     return f"Found {len(matches)} pieces of evidence. Call retrieve_evidence to view the evidence."

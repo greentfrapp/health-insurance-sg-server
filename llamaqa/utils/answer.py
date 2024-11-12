@@ -8,8 +8,7 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from .context import Context
-from .doc import Doc
-from .text import Text
+from ..reader.doc import Doc, Text
 
 
 class Answer(BaseModel):

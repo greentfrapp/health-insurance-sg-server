@@ -5,7 +5,7 @@ from pydantic import (
 )
 from typing import Dict, List
 
-from .text import Text
+from ..reader.doc import Text, Point
 
 
 class Context(BaseModel):
@@ -16,7 +16,7 @@ class Context(BaseModel):
     context: str = Field(description="Summary of the text with respect to a question.")
     text: Text
     score: int = 5
-    points: List[Dict[str, str]] = []
+    points: List[Point] = []
 
     def __str__(self) -> str:
         """Return the context as a string."""

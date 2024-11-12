@@ -1,11 +1,11 @@
 from functools import partial
-from typing import Any, Coroutine, List
-import asyncio
+from typing import List
 
+from ..reader.doc import Text
 from ..store.store import VectorStore
 from ..utils.cache import Cache
-from ..utils.text import Text
 from ..utils.utils import (
+    gather_with_concurrency,
     llm_parse_json,
     map_fxn_summary,
 )
@@ -25,25 +25,13 @@ Provide a summary of the relevant information that could help answer the questio
   ]
 }}
 
-where `summary` is relevant information from text - {summary_length} words, `relevance_score` is the relevance of `summary` to answer question (out of 10), and `points` is an array of `point` and `quote` pairs that supports the summary where each `quote` is an exact match quote (max 50 words) from the text that best supports the respective `point`. Make sure that the quote is an exact match without truncation or changes. Do not truncate the quote with any ellipsis.
+where `summary` is relevant information from text - {summary_length}, `relevance_score` is the relevance of `summary` to answer question (out of 10), and `points` is an array of `point` and `quote` pairs that supports the summary where each `quote` is an exact match quote (max 50 words) from the text that best supports the respective `point`. Make sure that the quote is an exact match without truncation or changes. Do not truncate the quote with any ellipsis.
 """  # noqa: E501
 
 
 SUMMARY_JSON_PROMPT = (
     "Excerpt from {citation}\n\n----\n\n{text}\n\n----\n\nQuestion: {question}\n\n"
 )
-
-
-async def gather_with_concurrency(n: int, coros: list[Coroutine]) -> list[Any]:
-    # https://stackoverflow.com/a/61478547/2392535
-    semaphore = asyncio.Semaphore(n)
-
-    async def sem_coro(coro):
-        async with semaphore:
-            return await coro
-
-    return await asyncio.gather(*(sem_coro(c) for c in coros))
-
 
 
 async def summarize_evidence(

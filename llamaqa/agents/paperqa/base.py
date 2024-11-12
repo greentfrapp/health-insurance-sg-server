@@ -106,20 +106,23 @@ class PaperQAAgent(ReActAgent):
         embedding_model_name = kwargs.get("embedding_model", "gemini/text-embedding-004")
         summary_llm_model_name = kwargs.get("summary_llm_model", "gemini/gemini-1.5-flash-002")
         llm_model_name = kwargs.get("llm_model", "gemini/gemini-1.5-flash-002")
+        toolspec = kwargs.get("toolspec")
 
-        store = SupabaseStore(
-            supabase_url=supabase_url,
-            supabase_key=supabase_service_key,
-        )
-        cache = Cache()
-        embedding_model = LiteLLMEmbeddingModel(name=embedding_model_name)
-        summary_llm_model = LiteLLMModel(name=summary_llm_model_name)
-        toolspec = PaperQAToolSpec(
-            store=store,
-            cache=cache,
-            embedding_model=embedding_model,
-            summary_llm_model=summary_llm_model,
-        )
+        if toolspec is None:
+            store = SupabaseStore(
+                supabase_url=supabase_url,
+                supabase_key=supabase_service_key,
+            )
+            cache = Cache()
+            embedding_model = LiteLLMEmbeddingModel(name=embedding_model_name)
+            summary_llm_model = LiteLLMModel(name=summary_llm_model_name)
+            toolspec = PaperQAToolSpec(
+                store=store,
+                cache=cache,
+                embedding_model=embedding_model,
+                summary_llm_model=summary_llm_model,
+            )
+
         llm = LiteLLM(llm_model_name)
         memory = ChatMemoryBuffer.from_defaults(
             chat_history=[],
@@ -142,7 +145,7 @@ class PaperQAAgent(ReActAgent):
         self.toolspec = toolspec
         return self
 
-    def stream_thoughts(self, query: str):
+    def stream_thoughts(self, query: str, step_by_step = False):
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="Remember to call gather_evidence if the user is asking about Singapore health insurance, especially if you are citing anything. Otherwise, just answer as per usual. Please avoid questions unrelated to Singapore health insurance but explain. You can ask the user to elaborate or clarify."))
         self.memory.put(ChatMessage(role=MessageRole.USER, content=query))
 
@@ -194,12 +197,28 @@ class PaperQAAgent(ReActAgent):
                 
                 # Extract tool to yield
                 try:
+                    # Temporarily disable verbose to prevent repeated logging
+                    _verbose = worker._verbose
+                    worker._verbose = False
                     _, current_reasoning, is_done = worker._extract_reasoning_step(
                         response_buffer, is_streaming=True
                     )
+                    worker._verbose = _verbose
                     reasoning_step = cast(ActionReasoningStep, current_reasoning[-1])
                     if reasoning_step.action in tools_dict:
-                        thought = f"Action Desc: {tools_dict[reasoning_step.action].fn.__output_desc__.format(**reasoning_step.action_input)}"
+                        # Populate with default kwargs and log description
+                        try:
+                            reasoning_step.action_input = {
+                                **tools_dict[reasoning_step.action].fn.__default_kwargs__,
+                                **reasoning_step.action_input,
+                            }
+                        except:
+                            pass
+                        thought = f"""Action Desc: {
+                            tools_dict[reasoning_step.action].fn.__output_desc__.format(
+                                **reasoning_step.action_input
+                            )
+                        }"""
                         # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
                         yield(thought)
                 except ValueError:
@@ -219,6 +238,10 @@ class PaperQAAgent(ReActAgent):
                     step_id=str(uuid.uuid4()),
                     input=None,
                 )
+            if step_by_step:
+                interrupt = input("Enter to continue or 'q' to quit: ")
+                if interrupt == "q":
+                    quit()
             if is_done:
                 break
             else:
