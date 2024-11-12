@@ -7,6 +7,8 @@ import re
 from collections.abc import Callable
 from typing import Any, Coroutine
 
+from tqdm import tqdm
+
 from llamaqa.llms.llm_result import LLMResult
 from .context import Context
 from ..reader.doc import Text
@@ -165,12 +167,18 @@ async def map_fxn_summary(
     )
 
 
-async def gather_with_concurrency(n: int, coros: list[Coroutine]) -> list[Any]:
+async def gather_with_concurrency(n: int, coros: list[Coroutine], progress = False) -> list[Any]:
     # https://stackoverflow.com/a/61478547/2392535
     semaphore = asyncio.Semaphore(n)
 
+    if progress:
+        pbar = tqdm(total=len(coros))
+
     async def sem_coro(coro):
         async with semaphore:
-            return await coro
+            result = await coro
+            if progress:
+                pbar.update(1)
+            return result
 
     return await asyncio.gather(*(sem_coro(c) for c in coros))

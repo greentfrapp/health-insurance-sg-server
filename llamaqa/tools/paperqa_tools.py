@@ -13,15 +13,15 @@ from .utils import tool_metadata
 
 
 VALID_POLICIES = [
-    "MediShield Life",
-    "NTUC Income IncomeShield Standard Plan",
-    "NTUC Income Enhanced IncomeShield",
+    # "MediShield Life",
+    # "NTUC Income IncomeShield Standard Plan",
+    # "NTUC Income Enhanced IncomeShield",
     "AIA HealthShield Gold",
     "Great Eastern GREAT SupremeHealth",
-    "HSBC Life Shield",
-    "Prudential PRUShield",
-    "Raffles Shield",
-    "Singlife Shield",
+    # "HSBC Life Shield",
+    # "Prudential PRUShield",
+    # "Raffles Shield",
+    # "Singlife Shield",
 ]
 
 

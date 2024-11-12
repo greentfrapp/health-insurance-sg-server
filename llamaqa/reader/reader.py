@@ -203,7 +203,8 @@ class Reader(BaseModel):
                         llm_model=self.llm_model,
                     )
                     for text in texts
-                ]
+                ],
+                progress=True,
             )
             for text, summary in zip(texts, results):
                 text.summary = summary["summary"]

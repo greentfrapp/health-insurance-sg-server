@@ -7,6 +7,36 @@
         "published_at": null,
         "doi": null,
         "citation": "\"AIA HealthShield Gold Max and AIA Max VitalHealth\" *Brochure*, AIA, n.d., pp. 1-24.",
-        "filepath": "AIA/ISPs/AIA HealthShield Gold Max Brochure.pdf"
+        "filepath": "AIA HealthShield Gold Max Brochure.pdf"
+    },
+    {
+        "path": "./Insurance Policies/AIA/ISPs/AIA HealthShield Gold Max Product Summary Booklet (truncated).pdf",
+        "title": "AIA HealthShield Gold Max Product Summary Booklet",
+        "abstract": "AIA HealthShield Gold Max is issued under a joint insurance arrangement with the Central Provident Fund (CPF) Board to enhance the coverage provided by MediShield Life. The insured will be covered by AIA HealthShield Gold Max and MediShield Life at the same time and, upon making a claim, we will pay the higher of the benefits under both plans.",
+        "authors": null,
+        "published_at": null,
+        "doi": null,
+        "citation": "\"AIA HealthShield Gold Max Product Summary Booklet\", AIA, n.d., pp. 1-44.",
+        "filepath": "AIA HealthShield Gold Max Product Summary Booklet (truncated).pdf"
+    },
+    {
+        "path": "./Insurance Policies/Great Eastern/ISPs/GREAT SupremeHealth Brochure.pdf",
+        "title": "GREAT SupremeHealth Brochure",
+        "abstract": "Great Eastern's range of Integrated Shield Plans and supplementary plans is designed to complement MediShield Life, providing you with optimal coverage for your hospitalisation needs at every stage of life. By supplementing GREAT SupremeHealth, a MediSave-approved Integrated Shield Plan, with GREAT TotalCare, you can be covered for up to 95% of your total hospitalisation bill due to an illness or injury, keeping out-of-pocket expenses to a minimum.",
+        "authors": null,
+        "published_at": null,
+        "doi": null,
+        "citation": "\"GREAT SupremeHealth Brochure\", Great Eastern, n.d., pp. 1-7.",
+        "filepath": "GREAT SupremeHealth Brochure.pdf"
+    },
+    {
+        "path": "./Insurance Policies/Great Eastern/ISPs/GREAT SupremeHealth and GREAT TotalCare Benefit Schedule and Premium Rates.pdf",
+        "title": "GREAT SupremeHealth and GREAT TotalCare Benefit Schedule and Premium Rates",
+        "abstract": "This document details the benefits, coverage and premium rates for the GREAT SupremeHealth and TotalCare policies by Great Eastern, applicable for new and renewing policies with cover start date from 1 October 2024 onwards.",
+        "authors": null,
+        "published_at": null,
+        "doi": null,
+        "citation": "\"GREAT SupremeHealth and GREAT TotalCare Benefit Schedule and Premium Rates\", Great Eastern, n.d., pp. 1-21.",
+        "filepath": "GREAT SupremeHealth and GREAT TotalCare Benefit Schedule and Premium Rates.pdf"
     }
 ]

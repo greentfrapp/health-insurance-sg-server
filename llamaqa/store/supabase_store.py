@@ -236,7 +236,7 @@ class SupabaseStore(VectorStore):
                         "abstract_emb": doc.embedding,
                         "citation": doc.citation,
                         "authors": doc.authors,
-                        "published_at": doc.published_at,
+                        "published_at": str(doc.published_at) if doc.published_at else None,
                         "filepath": doc.filepath,
                     }
                 )

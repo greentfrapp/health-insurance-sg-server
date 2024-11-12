@@ -31,17 +31,18 @@ async def main():
         llm_model=llm_model,
     )
 
-    for policy in POLICIES:
-        doc = await reader.read_doc(
-            **policy,
-            summarize_chunks=True,
-        )
-
     store = SupabaseStore(
         supabase_url=os.environ["SUPABASE_URL"],
         supabase_key=os.environ["SUPABASE_SERVICE_KEY"],
     )
-    await store.upload(doc)
+    
+    for policy in POLICIES:
+        print(f"Uploading {policy['title']}...")
+        doc = await reader.read_doc(
+            **policy,
+            summarize_chunks=True,
+        )
+        await store.upload(doc)
 
 
 if __name__ == "__main__":
