@@ -18,7 +18,7 @@ class Text(Embeddable):
     name: str
     doc: "Doc"
     pages: List[int] = []
-    summary: str = ""
+    summary: Optional[str] = None
     points: List[Point] = []
     
     def __init__(self, **kwargs):
