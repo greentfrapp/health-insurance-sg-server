@@ -28,7 +28,7 @@ VALID_POLICIES = [
 class PaperQAToolSpec(BaseToolSpec):
     spec_functions = [
         "gather_evidence_by_query",
-        "gather_all_evidence",
+        "gather_policy_overview",
         "retrieve_evidence",
     ]
     function_output_descriptors = {}
@@ -52,7 +52,7 @@ class PaperQAToolSpec(BaseToolSpec):
         self.summary_llm_model = summary_llm_model
 
     @tool_metadata(
-        desc="Gathering evidence with query \"{query}\" on policy \"{policy}\"...",
+        desc="Retrieving information with query \"{query}\" on policy \"{policy}\"...",
         default_kwargs={"policy": None},
     )
     def gather_evidence_by_query(
@@ -89,14 +89,16 @@ class PaperQAToolSpec(BaseToolSpec):
         return loop.run_until_complete(gather_evidence_helper())
 
     @tool_metadata(
-        desc="Gathering all information about policy \"{policy}\"...",
+        desc="Retrieving all information about policy \"{policy}\"...",
     )
-    def gather_all_evidence(
+    def gather_policy_overview(
         self,
         policy: str,
     ) -> str:
         f"""
-        Return all information about a policy.
+        Find all information about a policy.
+        This is useful when you want to get key features about a policy,
+        summarize a policy, or broadly compare different policies.
 
         valid_policies = {VALID_POLICIES}
 

@@ -62,7 +62,7 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
     bib_positions = []
     if EXAMPLE_CITATION in answer_text:
         answer_text = answer_text.replace(EXAMPLE_CITATION, "")
-    for c in toolspec.cache.filtered_contexts:
+    for c in toolspec.cache.filtered_contexts():
         # do check for whole key (so we don't catch Callahan2019a with Callahan2019)
         position = name_pos_in_text(c.text.name, answer_text)
         if position >= 0:
@@ -159,7 +159,7 @@ def tell_llm_about_failure_in_extract_reasoning_step(
     the LLM can be more cooperative in its next generation.
     """
     message = """Error: Could not parse output. Please follow the thought-action-input format. Try again.
-Maybe you should try calling the gather_evidence tool.
+Maybe you should try calling the retrieve_evidence_by_query or retrieve_policy_overview tool.
 Remember that the format should be
 ```
 Thought: I need to use a tool to help me answer the question.
