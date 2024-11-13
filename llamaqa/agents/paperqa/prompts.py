@@ -14,8 +14,7 @@ This may require breaking the task into subtasks and using different tools
 to complete each subtask.
 
 The tools allow you to interact with a database containing documents about
-different insurance policies, split into chunks. As such, if you want to
-compare different policies, you should first query for each policy individually using multiple gather_evidence tool calls.
+different insurance policies, split into chunks.
 
 The policies that you can access via the tools include:
 {VALID_POLICIES}
@@ -57,9 +56,7 @@ Answer: Sorry, I cannot answer your query.
 ```
 
 ## Additional Rules
-- You should ALWAYS try using the gather_evidence tool if the user is asking a question about insurance
-- After using retrieve_evidence, if the output seems to indicate insufficient information, you should call gather_evidence again to gather the missing information
-- Important! Before answering that you need more information, make sure you've tried using the gather_evidence tool!
+- You should ALWAYS try using the retrieve_evidence tool if the user is asking a question about insurance
 
 ## Current Conversation
 Below is the current conversation consisting of interleaving human and assistant messages.

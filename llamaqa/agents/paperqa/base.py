@@ -42,7 +42,7 @@ from ...llms import (
     LiteLLMModel,
 )
 from ...store.supabase_store import SupabaseStore
-from ...tools.paperqa_tools import PaperQAToolSpec
+from ...tools.paperqa_tools import PaperQAToolSpec, VALID_POLICIES
 from ...utils.cache import Cache
 
 
@@ -145,8 +145,11 @@ class PaperQAAgent(ReActAgent):
         self.toolspec = toolspec
         return self
 
-    def stream_thoughts(self, query: str, step_by_step = False):
-        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="Remember to call gather_evidence if the user is asking about Singapore health insurance, especially if you are citing anything. Otherwise, just answer as per usual. Please avoid questions unrelated to Singapore health insurance but explain. You can ask the user to elaborate or clarify."))
+    def stream_thoughts(self, query: str, current_document: Optional[str] = None, step_by_step = False):
+        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="Remember to call gather_evidence_by_query or gather_policy_overview if the user is asking about Singapore health insurance, especially if you are citing anything. You can access documents that the user is seeing via these tools. Otherwise, just answer as per usual. Please avoid questions unrelated to Singapore health insurance but explain. You can ask the user to elaborate or clarify."))
+        if current_document:
+            if current_document in VALID_POLICIES:
+                self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=f"The user is currently looking at \"{current_document}\". This might be relevant to their request."))
         self.memory.put(ChatMessage(role=MessageRole.USER, content=query))
 
         worker = cast(PaperQAAgentWorker, self.agent_worker)

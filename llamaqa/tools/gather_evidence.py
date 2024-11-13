@@ -122,10 +122,11 @@ async def gather_evidence(
             ],
         )
         summaries = [cast(Context, summary) for summary, _ in results]
-        for summary in summaries:
-            summary.text.name = prefix + summary.text.name
-            summary.text.doc.docname = prefix + summary.text.doc.docname
 
-    cache.summaries = summaries
+    for summary in summaries:
+        summary.text.name = prefix + summary.text.name
+        summary.text.doc.docname = prefix + summary.text.doc.docname
+
+    cache.summaries += summaries
 
     return f"Found {len(matches)} pieces of evidence. Call retrieve_evidence to view the evidence."
