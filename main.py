@@ -2,6 +2,7 @@ from typing import List, Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
+import logging
 import nest_asyncio
 
 from fastapi import FastAPI
@@ -44,21 +45,23 @@ def get_status():
 
 
 # Helper function for logging
-def stream_thoughts_helper(
+async def stream_thoughts_helper(
     agent: PaperQAAgent,
     query: str,
     history: List[ChatMessage] = [],
     current_document: Optional[str] = None,
+    step_by_step = False,
 ):
     agent.memory.set(history)
-    stream = agent.stream_thoughts(query, current_document)
-    for chunk in stream:
+    stream = agent.stream_thoughts(query, current_document, step_by_step)
+    async for chunk in stream:
         print(f"\033[38;5;228m{chunk}\033[0m")
         yield(chunk)
+    print(f"\033[38;5;69mTotal cost: {agent.cost_logger.total_cost}\033[0m")
 
 
 @app.post("/stream_query")
-def post_stream_query(payload: QueryPayload):
+async def post_stream_query(payload: QueryPayload):
     agent = PaperQAAgent.from_config()
     return StreamingResponse(
         stream_thoughts_helper(agent, payload.query, payload.history, payload.current_policy),
@@ -66,23 +69,33 @@ def post_stream_query(payload: QueryPayload):
     )
 
 
-if __name__ == "__main__":
+async def main():
+    logging.basicConfig()
+
     agent = PaperQAAgent.from_config()
-    def test_stream_thoughts(query: str):
-        response = stream_thoughts_helper(agent, query, [], "AIA HealthShield Gold")
-        for _ in response:
+    agent.cost_logger.logger.setLevel(logging.INFO)
+    async def test_stream_thoughts(query: str, step_by_step=False):
+        response = stream_thoughts_helper(agent, query, [], "AIA HealthShield Gold", step_by_step)
+        async for _ in response:
             pass
-    query = "summarize this policy"
+    query = "lasik coverage for this policy"
     while True:
         # response = test_stream_thoughts("lasik coverage for aia gold")
-        response = test_stream_thoughts(query)
+        response = await test_stream_thoughts(query, step_by_step=True)
         # response = test_stream_thoughts("what was my last question")
         # response = test_stream_thoughts("how about for aia")
         # response = test_stream_thoughts("summarize all of that in a table format")
         # response = test_stream_thoughts("Point form instead")
         # response = test_stream_thoughts("Tell me about prosthetic coverage for ntuc income. Give your answer in point form")
         # response = test_stream_thoughts("do the same for aia")
-        query = input()
-        if query == "q": break 
-        print(query)
+        query = input("Reply: ")
+        if query == "q": break
     agent.pprint_memory()
+    print("Total cost: ", agent.cost_logger.total_cost)
+
+
+if __name__ == "__main__":
+    import asyncio
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(main())

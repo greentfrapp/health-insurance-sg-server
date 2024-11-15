@@ -37,7 +37,7 @@ def infer_stream_chunk_is_final(
         # keep first chunks
         if len(latest_content) < len("Thought"):
             missed_chunks_storage.append(chunk)
-        elif not latest_content.startswith("Thought") and "\nThought:" not in latest_content:
+        elif not latest_content.startswith("Thought:") and "Thought:" not in latest_content:
             return True
         elif "Answer:" in latest_content:
             missed_chunks_storage.clear()
@@ -120,7 +120,7 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
 
     response.answer = re.sub(citation_group_pattern, replace_with_tag, response.answer.strip())
 
-    period_citation_pattern = re.compile(f"\\.\\s*?(?P<citation><cite>.*?</cite>)")
+    period_citation_pattern = re.compile("\\.\\s*?(?P<citation><cite>.*?</cite>)")
     def move_period_mark(match: re.Match):
         return f"{match.groupdict()['citation']}."
     
@@ -134,7 +134,10 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
         context = cast(Context, response.bib[docname])
         quote = None
         if " quote" in r:
-            quote = context.points[int(r.split(" quote")[1]) - 1].quote
+            try:
+                quote = context.points[int(r.split(" quote")[1]) - 1].quote
+            except:
+                pass
         references.append({
             "id": r,
             "filepath": context.text.doc.filepath,

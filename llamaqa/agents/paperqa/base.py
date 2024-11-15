@@ -4,11 +4,17 @@ from typing import (
     Sequence,
     cast,
 )
+import asyncio
 import json
+import logging
 import os
 import uuid
 
 from litellm import completion_cost
+from litellm.exceptions import (
+    APIConnectionError,
+    ServiceUnavailableError,
+)
 from litellm.types.utils import ModelResponse
 from llama_index.core import PromptTemplate
 from llama_index.core.agent import AgentRunner
@@ -19,18 +25,17 @@ from llama_index.core.agent.react import (
 from llama_index.core.agent.react.types import ActionReasoningStep
 from llama_index.core.base.llms.types import ChatMessage, MessageRole
 from llama_index.core.callbacks import CallbackManager
-from llama_index.core.instrumentation import get_dispatcher
 from llama_index.core.llms.llm import LLM
 from llama_index.core.memory.chat_memory_buffer import ChatMemoryBuffer
 from llama_index.core.memory.types import BaseMemory
 from llama_index.core.objects.base import ObjectRetriever
 from llama_index.core.tools import BaseTool, ToolOutput
 from llama_index.llms.litellm import LiteLLM
-
 from llama_index.core.agent.react.step import (
     add_user_step_to_reasoning,
 )
 
+from .fallback import FALLBACK_RESPONSE_CONTENT, FALLBACK_FINAL_RESPONSE
 from .parser import PaperQAOutputParser
 from .prompts import PAPERQA_SYSTEM_PROMPT
 from .utils import (
@@ -49,7 +54,7 @@ from ...utils.cache import Cache
 from ...utils.logger import CostLogger
 
 
-dispatcher = get_dispatcher(__name__)
+logger = logging.getLogger("paperqa-agent")
 
 
 class PaperQAAgent(ReActAgent):
@@ -155,7 +160,7 @@ class PaperQAAgent(ReActAgent):
         self.toolspec = toolspec
         return self
 
-    def stream_thoughts(self, query: str, current_document: Optional[str] = None, step_by_step = False):
+    async def stream_thoughts(self, query: str, current_document: Optional[str] = None, step_by_step = False):
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="Remember to call gather_evidence_by_query or gather_policy_overview if the user is asking about Singapore health insurance, especially if you are citing anything. You can access documents that the user is seeing via these tools. Otherwise, just answer as per usual. Please avoid questions unrelated to Singapore health insurance but explain. You can ask the user to elaborate or clarify."))
         if current_document:
             if current_document in VALID_POLICIES:
@@ -191,16 +196,32 @@ class PaperQAAgent(ReActAgent):
                 current_reasoning=task.extra_state["current_reasoning"],
             )
 
-            chat_stream = worker._llm.stream_chat(input_chat)
+            response_success = False
+            num_retries = 3
+            retry_after = 5
+            current_retry = 0
+            while not response_success:
+                try:
+                    chat_stream = worker._llm.stream_chat(input_chat)
 
-            response_buffer = ""
-            for chunk in chat_stream:
-                value = chunk.message.content[len(response_buffer):]
-                yield(value)
-                response_buffer += value
-                is_done = infer_stream_chunk_is_final(
-                    response_buffer, []
-                )
+                    response_buffer = ""
+                    for chunk in chat_stream:
+                        value = chunk.message.content[len(response_buffer):]
+                        yield(value)
+                        response_buffer += value
+                        is_done = infer_stream_chunk_is_final(
+                            response_buffer, []
+                        )
+                    response_success = True
+                except (APIConnectionError, ServiceUnavailableError) as e:
+                    current_retry += 1
+                    if current_retry > num_retries: break
+                    logger.warn(str(e) + f"\nRetrying ({current_retry}/{num_retries}) after {retry_after}s...")
+                    await asyncio.sleep(retry_after)
+            if not response_success:
+                self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=FALLBACK_RESPONSE_CONTENT))
+                yield(FALLBACK_FINAL_RESPONSE)
+                return
             
             if not is_done:
                 tools = worker.get_tools(task.input)
@@ -208,7 +229,7 @@ class PaperQAAgent(ReActAgent):
                     tool.metadata.get_name(): tool for tool in tools
                 }
                 
-                # Extract tool to yield
+                # Extract tool to yield tool description
                 try:
                     # Temporarily disable verbose to prevent repeated logging
                     _verbose = worker._verbose
