@@ -8,6 +8,8 @@ import json
 import os
 import uuid
 
+from litellm import completion_cost
+from litellm.types.utils import ModelResponse
 from llama_index.core import PromptTemplate
 from llama_index.core.agent import AgentRunner
 from llama_index.core.agent.react import (
@@ -44,6 +46,7 @@ from ...llms import (
 from ...store.supabase_store import SupabaseStore
 from ...tools.paperqa_tools import PaperQAToolSpec, VALID_POLICIES
 from ...utils.cache import Cache
+from ...utils.logger import CostLogger
 
 
 dispatcher = get_dispatcher(__name__)
@@ -51,6 +54,7 @@ dispatcher = get_dispatcher(__name__)
 
 class PaperQAAgent(ReActAgent):
     toolspec: PaperQAToolSpec
+    cost_logger: CostLogger
 
     def __init__(
         self,
@@ -67,6 +71,7 @@ class PaperQAAgent(ReActAgent):
         handle_reasoning_failure_fn: Optional[
             Callable[[CallbackManager, Exception], ToolOutput]
         ] = None,
+        cost_logger: Optional[CostLogger] = None,
     ) -> None:
         """Init params."""
         callback_manager = callback_manager or llm.callback_manager
@@ -99,6 +104,8 @@ class PaperQAAgent(ReActAgent):
             "agent_worker:system_prompt": PromptTemplate(PAPERQA_SYSTEM_PROMPT)
         })
 
+        self.cost_logger = cost_logger
+
     @classmethod
     def from_config(cls, **kwargs):
         supabase_url = kwargs.get("supabase_url", os.environ["SUPABASE_URL"])
@@ -107,6 +114,7 @@ class PaperQAAgent(ReActAgent):
         summary_llm_model_name = kwargs.get("summary_llm_model", "gemini/gemini-1.5-flash-002")
         llm_model_name = kwargs.get("llm_model", "gemini/gemini-1.5-flash-002")
         toolspec = kwargs.get("toolspec")
+        cost_logger = CostLogger()
 
         if toolspec is None:
             store = SupabaseStore(
@@ -114,13 +122,14 @@ class PaperQAAgent(ReActAgent):
                 supabase_key=supabase_service_key,
             )
             cache = Cache()
-            embedding_model = LiteLLMEmbeddingModel(name=embedding_model_name)
-            summary_llm_model = LiteLLMModel(name=summary_llm_model_name)
+            embedding_model = LiteLLMEmbeddingModel(name=embedding_model_name, cost_logger=cost_logger)
+            summary_llm_model = LiteLLMModel(name=summary_llm_model_name, cost_logger=cost_logger)
             toolspec = PaperQAToolSpec(
                 store=store,
                 cache=cache,
                 embedding_model=embedding_model,
                 summary_llm_model=summary_llm_model,
+                cost_logger=cost_logger,
             )
 
         llm = LiteLLM(llm_model_name)
@@ -141,6 +150,7 @@ class PaperQAAgent(ReActAgent):
             verbose=True,
             context=None,
             handle_reasoning_failure_fn=tell_llm_about_failure_in_extract_reasoning_step,
+            cost_logger=cost_logger,
         )
         self.toolspec = toolspec
         return self
@@ -171,7 +181,7 @@ class PaperQAAgent(ReActAgent):
                     task.extra_state["current_reasoning"],
                     verbose=worker._verbose,
                 )
-            # TODO: see if we want to do step-based inputs
+            
             tools = worker.get_tools(task.input)
 
             input_chat = worker._react_chat_formatter.format(
@@ -241,6 +251,17 @@ class PaperQAAgent(ReActAgent):
                     step_id=str(uuid.uuid4()),
                     input=None,
                 )
+            
+            # Calculate cost with final chunk
+            cost = completion_cost(
+                completion_response=ModelResponse(
+                    model=chunk.raw.model,
+                    usage=chunk.raw._hidden_params.get("usage"),
+                ),
+                custom_llm_provider=chunk.raw._hidden_params.get("custom_llm_provider"),
+            )
+            self.cost_logger.log_cost(cost)
+            
             if step_by_step:
                 interrupt = input("Enter to continue or 'q' to quit: ")
                 if interrupt == "q":

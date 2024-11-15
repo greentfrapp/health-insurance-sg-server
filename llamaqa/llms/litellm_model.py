@@ -19,6 +19,7 @@ from .llm_model import (
     LLMModel,
     rate_limited,
 )
+from ..utils.logger import CostLogger
 
 
 IS_PYTHON_BELOW_312 = version_info < (3, 12)
@@ -89,6 +90,7 @@ class LiteLLMModel(LLMModel):
     )
     name: str = "gpt-4o-mini"
     _router: litellm.Router | None = None
+    cost_logger: CostLogger = CostLogger()
 
     @model_validator(mode="before")
     @classmethod
@@ -166,10 +168,12 @@ class LiteLLMModel(LLMModel):
     @rate_limited
     async def acomplete(self, prompt: str) -> Chunk:  # type: ignore[override]
         response = await self.router.atext_completion(model=self.name, prompt=prompt)
+        self.cost_logger.log_cost(response._hidden_params.get("response_cost"))
         return Chunk(
             text=response.choices[0].text,
             prompt_tokens=response.usage.prompt_tokens,
             completion_tokens=response.usage.completion_tokens,
+            cost=response._hidden_params.get("response_cost"),
         )
 
     @rate_limited
@@ -187,8 +191,12 @@ class LiteLLMModel(LLMModel):
                 text=chunk.choices[0].text, prompt_tokens=0, completion_tokens=0
             )
         if hasattr(chunk, "usage") and hasattr(chunk.usage, "prompt_tokens"):
+            self.cost_logger.log_cost(chunk._hidden_params.get("response_cost"))
             yield Chunk(
-                text=chunk.choices[0].text, prompt_tokens=0, completion_tokens=0
+                text=chunk.choices[0].text,
+                prompt_tokens=chunk.usage.prompt_tokens,
+                completion_tokens=chunk.usage.completion_tokens,
+                cost=chunk._hidden_params.get("response_cost"),
             )
 
     @rate_limited
@@ -196,10 +204,12 @@ class LiteLLMModel(LLMModel):
         self, messages: Iterable[dict[str, str]]
     ) -> Chunk:
         response = await self.router.acompletion(self.name, list(messages))
+        self.cost_logger.log_cost(response._hidden_params.get("response_cost"))
         return Chunk(
             text=cast(litellm.Choices, response.choices[0]).message.content,
             prompt_tokens=response.usage.prompt_tokens,  # type: ignore[attr-defined]
             completion_tokens=response.usage.completion_tokens,  # type: ignore[attr-defined]
+            cost=response._hidden_params.get("response_cost"),
         )
 
     @rate_limited
@@ -219,10 +229,12 @@ class LiteLLMModel(LLMModel):
                 completion_tokens=0,
             )
         if hasattr(chunk, "usage") and hasattr(chunk.usage, "prompt_tokens"):
+            self.cost_logger.log_cost(chunk._hidden_params.get("response_cost"))
             yield Chunk(
                 text=None,
                 prompt_tokens=chunk.usage.prompt_tokens,
                 completion_tokens=chunk.usage.completion_tokens,
+                cost=chunk._hidden_params.get("response_cost"),
             )
 
     def infer_llm_type(self) -> str:

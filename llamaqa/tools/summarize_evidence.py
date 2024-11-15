@@ -1,13 +1,13 @@
 from functools import partial
 from typing import List
 
+from .utils import map_fxn_summary
 from ..reader.doc import Text
 from ..store.store import VectorStore
 from ..utils.cache import Cache
 from ..utils.utils import (
     gather_with_concurrency,
     llm_parse_json,
-    map_fxn_summary,
 )
 
 

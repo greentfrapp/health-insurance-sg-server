@@ -13,6 +13,7 @@ from typing import (
     Awaitable,
     Callable,
     Iterable,
+    Optional,
     TypeVar,
 )
 import asyncio
@@ -64,6 +65,7 @@ class Chunk(BaseModel):
     text: str | None
     prompt_tokens: int
     completion_tokens: int
+    cost: Optional[float] = None
 
     def __str__(self):
         return self.text

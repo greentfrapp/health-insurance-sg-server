@@ -1,13 +1,13 @@
 from functools import partial
-from typing import Any, Coroutine, Optional, cast
-import asyncio
+from typing import Optional, cast
 
+from .utils import map_fxn_summary
 from ..store.supabase_store import SupabaseStore
 from ..utils.cache import Cache
 from ..utils.context import Context
 from ..utils.utils import (
+    gather_with_concurrency,
     llm_parse_json,
-    map_fxn_summary,
 )
 
 
@@ -36,18 +36,6 @@ SUMMARY_JSON_PROMPT = (
 
 class EmptyDocsError(RuntimeError):
     """Error to throw when we needed docs to be present."""
-
-
-async def gather_with_concurrency(n: int, coros: list[Coroutine]) -> list[Any]:
-    # https://stackoverflow.com/a/61478547/2392535
-    semaphore = asyncio.Semaphore(n)
-
-    async def sem_coro(coro):
-        async with semaphore:
-            return await coro
-
-    return await asyncio.gather(*(sem_coro(c) for c in coros))
-
 
 
 async def gather_evidence(

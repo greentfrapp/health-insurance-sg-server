@@ -3,13 +3,14 @@ import asyncio
 
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
 
+from .gather_evidence import gather_evidence
+from .retrieve_evidence import retrieve_evidence
+from .utils import tool_metadata
 from ..llms.embedding_model import EmbeddingModel
 from ..llms.llm_model import LLMModel
 from ..store.store import VectorStore
 from ..utils.cache import Cache
-from .gather_evidence import gather_evidence
-from .retrieve_evidence import retrieve_evidence
-from .utils import tool_metadata
+from ..utils.logger import CostLogger
 
 
 VALID_POLICIES = [
@@ -37,6 +38,7 @@ class PaperQAToolSpec(BaseToolSpec):
     embedding_model: EmbeddingModel
     summary_llm_model: LLMModel
     current_task_id: str = ""
+    cost_logger: CostLogger
 
     def __init__(
         self,
@@ -44,12 +46,14 @@ class PaperQAToolSpec(BaseToolSpec):
         cache: Cache,
         embedding_model: EmbeddingModel,
         summary_llm_model: LLMModel,
+        cost_logger: Optional[CostLogger] = None,
     ):
         super().__init__()
         self.store = store
         self.cache = cache
         self.embedding_model = embedding_model
         self.summary_llm_model = summary_llm_model
+        self.cost_logger = cost_logger or CostLogger()
 
     @tool_metadata(
         desc="Retrieving information with query \"{query}\" on policy \"{policy}\"...",

@@ -11,6 +11,7 @@ import litellm
 import tiktoken
 
 from .litellm_model import get_litellm_retrying_config
+from ..utils.logger import CostLogger
 
 
 # Estimate from OpenAI's FAQ
@@ -69,6 +70,7 @@ class LiteLLMEmbeddingModel(EmbeddingModel):
             " Router is not used here."
         ),
     )
+    cost_logger: CostLogger = CostLogger()
 
     @field_validator("config")
     @classmethod
@@ -118,5 +120,6 @@ class LiteLLMEmbeddingModel(EmbeddingModel):
                 **self.config.get("kwargs", {}),
             )
             embeddings.extend([e["embedding"] for e in response.data])
+            self.cost_logger.log_cost(response._hidden_params.get("response_cost", 0))
 
         return embeddings

@@ -14,7 +14,6 @@ from ...tools.retrieve_evidence import (
     EXAMPLE_CITATION,
 )
 from ...utils.answer import Answer
-from ...utils.cache import Cache
 from ...utils.context import Context
 
 
