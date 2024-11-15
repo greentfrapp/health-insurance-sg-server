@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import ClassVar, Literal, overload
 from uuid import uuid5, UUID
 
-import pymupdf
 import pypdf
 import tiktoken
 from html2text import __version__ as html2text_version
@@ -507,4 +506,3 @@ async def summarize_chunk(text: str, llm_model: LLMModel):
     )
     summary_json = result.to_json()
     return summary_json
-

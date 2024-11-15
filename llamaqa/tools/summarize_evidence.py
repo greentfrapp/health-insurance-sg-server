@@ -1,5 +1,5 @@
 from functools import partial
-from typing import List
+from typing import List, Optional
 
 from .utils import map_fxn_summary
 from ..reader.doc import Text
@@ -38,9 +38,10 @@ async def summarize_evidence(
     cache: Cache,
     store: VectorStore,
     query: str,
-    chunks: List[Text] = [],
-    summary_llm_model = None,
+    chunks: Optional[List[Text]] = None,
+    summary_llm_model=None,
 ):
+    chunks = chunks or []
     prompt_runner = partial(
         summary_llm_model.run_prompt,
         SUMMARY_JSON_PROMPT,

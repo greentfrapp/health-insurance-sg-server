@@ -45,8 +45,8 @@ async def gather_evidence(
     policy: Optional[str] = None,
     k: int = 5,
     mmr_lambda: float = 0.9,
-    embedding_model = None,
-    summary_llm_model = None,
+    embedding_model=None,
+    summary_llm_model=None,
     prefix: str = "",
 ):
     """
@@ -63,7 +63,7 @@ async def gather_evidence(
     Returns:
         String describing gathered evidence and the current status.
     """
-    
+
     store.mmr_lambda = mmr_lambda
 
     if query is None and policy is None:
@@ -72,17 +72,23 @@ async def gather_evidence(
     # If query is None, retrieve all info about given policy
     if query is None:
         matches = await store.get_all_policy_info([policy])
-        summaries = [Context(
-            context=match.summary,
-            text=match,
-            score=5,
-            points=match.points,
-        ) for match in matches]
+        summaries = [
+            Context(
+                context=match.summary,
+                text=match,
+                score=5,
+                points=match.points,
+            )
+            for match in matches
+        ]
     # Use vector retrieval
     else:
         matches = (
             await store.max_marginal_relevance_search(
-                query, k=k, fetch_k=2 * k, embedding_model=embedding_model,
+                query,
+                k=k,
+                fetch_k=2 * k,
+                embedding_model=embedding_model,
                 policies=[policy],
             )
         )[0]

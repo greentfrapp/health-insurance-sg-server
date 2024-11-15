@@ -48,15 +48,16 @@ def get_status():
 async def stream_thoughts_helper(
     agent: PaperQAAgent,
     query: str,
-    history: List[ChatMessage] = [],
+    history: Optional[List[ChatMessage]] = None,
     current_document: Optional[str] = None,
-    step_by_step = False,
+    step_by_step=False,
 ):
+    history = history or []
     agent.memory.set(history)
     stream = agent.stream_thoughts(query, current_document, step_by_step)
     async for chunk in stream:
         print(f"\033[38;5;228m{chunk}\033[0m")
-        yield(chunk)
+        yield chunk
     print(f"\033[38;5;69mTotal cost: {agent.cost_logger.total_cost}\033[0m")
 
 
@@ -64,7 +65,9 @@ async def stream_thoughts_helper(
 async def post_stream_query(payload: QueryPayload):
     agent = PaperQAAgent.from_config()
     return StreamingResponse(
-        stream_thoughts_helper(agent, payload.query, payload.history, payload.current_policy),
+        stream_thoughts_helper(
+            agent, payload.query, payload.history, payload.current_policy
+        ),
         media_type="text/event-stream",
     )
 
@@ -74,28 +77,34 @@ async def main():
 
     agent = PaperQAAgent.from_config()
     agent.cost_logger.logger.setLevel(logging.INFO)
+
     async def test_stream_thoughts(query: str, step_by_step=False):
-        response = stream_thoughts_helper(agent, query, [], "AIA HealthShield Gold", step_by_step)
+        response = stream_thoughts_helper(
+            agent, query, [], "AIA HealthShield Gold", step_by_step
+        )
         async for _ in response:
             pass
+
     query = "lasik coverage for this policy"
     while True:
-        # response = test_stream_thoughts("lasik coverage for aia gold")
-        response = await test_stream_thoughts(query, step_by_step=True)
-        # response = test_stream_thoughts("what was my last question")
-        # response = test_stream_thoughts("how about for aia")
-        # response = test_stream_thoughts("summarize all of that in a table format")
-        # response = test_stream_thoughts("Point form instead")
-        # response = test_stream_thoughts("Tell me about prosthetic coverage for ntuc income. Give your answer in point form")
-        # response = test_stream_thoughts("do the same for aia")
+        # await test_stream_thoughts("lasik coverage for aia gold")
+        await test_stream_thoughts(query, step_by_step=True)
+        # await test_stream_thoughts("what was my last question")
+        # await test_stream_thoughts("how about for aia")
+        # await test_stream_thoughts("summarize all of that in a table format")
+        # await test_stream_thoughts("Point form instead")
+        # await test_stream_thoughts("Tell me about prosthetic coverage for ntuc income. Give your answer in point form")
+        # await test_stream_thoughts("do the same for aia")
         query = input("Reply: ")
-        if query == "q": break
+        if query == "q":
+            break
     agent.pprint_memory()
     print("Total cost: ", agent.cost_logger.total_cost)
 
 
 if __name__ == "__main__":
     import asyncio
+
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
     loop.run_until_complete(main())

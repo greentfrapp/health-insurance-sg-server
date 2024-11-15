@@ -7,9 +7,9 @@ class CostLogger(BaseModel):
     logger: logging.Logger = logging.getLogger("paperqa-cost")
     _total_cost: float = 0
     _STY_COLOR = "\033[38;5;69m"
-    _STY_RESET = '\033[0m'
+    _STY_RESET = "\033[0m"
 
-    model_config=ConfigDict(arbitrary_types_allowed=True)
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def log_cost(self, cost: float):
         cost = cost or 0

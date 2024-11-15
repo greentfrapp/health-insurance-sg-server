@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod
 from enum import StrEnum
+from typing import Any
+
 from pydantic import (
     BaseModel,
     Field,
     field_validator,
 )
-from typing import Any
-
 import litellm
 import tiktoken
 
@@ -59,7 +59,6 @@ class EmbeddingModel(ABC, BaseModel):
 
 
 class LiteLLMEmbeddingModel(EmbeddingModel):
-
     name: str = Field(default="text-embedding-3-small")
     config: dict[str, Any] = Field(
         default_factory=dict,  # See below field_validator for injection of kwargs
@@ -106,7 +105,6 @@ class LiteLLMEmbeddingModel(EmbeddingModel):
         N = len(texts)
         embeddings = []
         for i in range(0, N, batch_size):
-
             await self.check_rate_limit(
                 sum(
                     len(t) / CHARACTERS_PER_TOKEN_ASSUMPTION

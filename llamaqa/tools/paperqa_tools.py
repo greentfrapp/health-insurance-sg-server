@@ -56,7 +56,21 @@ class PaperQAToolSpec(BaseToolSpec):
         self.cost_logger = cost_logger or CostLogger()
 
     @tool_metadata(
-        desc="Retrieving information with query \"{query}\" on policy \"{policy}\"...",
+        desc=f"""
+Find and return pieces of evidence that are relevant
+to a given query and policy.
+This can be called multiple times with varying search terms
+if insufficient information was found.
+This should only be called for queries relevant to insurance.
+Never ever call this tool for queries unrelated to insurance.
+
+valid_policies = {VALID_POLICIES}
+
+Args:
+    query (str): The query to search for
+    policy (str) = None: The policy to filter by, must be one of values in valid_policies list. If None, defaults to searching all policies.
+""",
+        output_desc='Retrieving information with query "{query}" on policy "{policy}"...',
         default_kwargs={"policy": None},
     )
     def gather_evidence_by_query(
@@ -64,20 +78,6 @@ class PaperQAToolSpec(BaseToolSpec):
         query: str,
         policy: Optional[str] = None,
     ) -> str:
-        f"""
-        Find and return pieces of evidence that are relevant
-        to a given query and policy.
-        This can be called multiple times with varying search terms
-        if insufficient information was found.
-        This should only be called for queries relevant to insurance.
-        Never ever call this tool for queries unrelated to insurance.
-
-        valid_policies = {VALID_POLICIES}
-
-        Args:
-            query (str): The query to search for
-            policy (str) = None: The policy to filter by, must be one of values in valid_policies list. If None, defaults to searching all policies.
-        """
         async def gather_evidence_helper():
             response = await gather_evidence(
                 self.cache,
@@ -89,42 +89,45 @@ class PaperQAToolSpec(BaseToolSpec):
                 prefix=self.current_task_id,
             )
             return response
+
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(gather_evidence_helper())
 
     @tool_metadata(
-        desc="Retrieving all information about policy \"{policy}\"...",
+        desc=
+        f"""
+Find all information about a policy.
+This is useful when you want to get key features about a policy,
+summarize a policy, or broadly compare different policies.
+
+valid_policies = {VALID_POLICIES}
+
+Args:
+    policy (str) = None: The policy to filter by, must be one of values in valid_policies list. If None, defaults to searching all policies.
+""",
+        output_desc='Retrieving all information about policy "{policy}"...',
     )
     def gather_policy_overview(
         self,
         policy: str,
     ) -> str:
-        f"""
-        Find all information about a policy.
-        This is useful when you want to get key features about a policy,
-        summarize a policy, or broadly compare different policies.
-
-        valid_policies = {VALID_POLICIES}
-
-        Args:
-            policy (str) = None: The policy to filter by, must be one of values in valid_policies list. If None, defaults to searching all policies.
-        """
         async def gather_evidence_helper():
             response = await gather_evidence(
                 self.cache,
                 self.store,
-                query=None, # Use query=None to return all information
+                query=None,  # Use query=None to return all information
                 policy=policy,
                 embedding_model=self.embedding_model,
                 summary_llm_model=self.summary_llm_model,
                 prefix=self.current_task_id,
             )
             return response
+
         loop = asyncio.get_event_loop()
         return loop.run_until_complete(gather_evidence_helper())
 
     @tool_metadata(
-        desc="Retrieving gathered evidence...",
+        output_desc="Retrieving gathered evidence...",
     )
     def retrieve_evidence(self, question: str) -> str:
         """

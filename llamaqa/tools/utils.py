@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Optional
 import functools
 
 from llamaqa.llms.llm_result import LLMResult
@@ -10,21 +10,29 @@ from ..utils.utils import extract_score, strip_citations
 def output_descriptor(desc: str):
     def decorator_add_descriptor(func: Callable):
         func.__output_desc__ = desc
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator_add_descriptor
 
 
-def tool_metadata(desc: str, default_kwargs: Dict = {}):
+def tool_metadata(desc: str = "", output_desc: str = "", default_kwargs: Optional[Dict] = None):
+    default_kwargs = default_kwargs or {}
     def decorator_add_metadata(func: Callable):
-        func.__output_desc__ = desc
+        func.__doc__ = desc or func.__doc__
+        func.__output_desc__ = output_desc
         func.__default_kwargs__ = default_kwargs
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             return func(*args, **kwargs)
+
         return wrapper
+
     return decorator_add_metadata
 
 

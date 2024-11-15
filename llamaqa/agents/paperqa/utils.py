@@ -17,9 +17,7 @@ from ...utils.answer import Answer
 from ...utils.context import Context
 
 
-def infer_stream_chunk_is_final(
-    chunk: str, missed_chunks_storage: list
-) -> bool:
+def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool:
     """Infers if a chunk from a live stream is the start of the final
     reasoning step. (i.e., and should eventually become
     ResponseReasoningStep — not part of this function's logic tho.).
@@ -37,7 +35,10 @@ def infer_stream_chunk_is_final(
         # keep first chunks
         if len(latest_content) < len("Thought"):
             missed_chunks_storage.append(chunk)
-        elif not latest_content.startswith("Thought:") and "Thought:" not in latest_content:
+        elif (
+            not latest_content.startswith("Thought:")
+            and "Thought:" not in latest_content
+        ):
             return True
         elif "Answer:" in latest_content:
             missed_chunks_storage.clear()
@@ -65,10 +66,12 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
         # do check for whole key (so we don't catch Callahan2019a with Callahan2019)
         position = name_pos_in_text(c.text.name, answer_text)
         if position >= 0:
-            bib_positions.append({
-                "bib": c,
-                "pos": position,
-            })
+            bib_positions.append(
+                {
+                    "bib": c,
+                    "pos": position,
+                }
+            )
     bib_positions.sort(key=lambda x: x["pos"])
     bib = OrderedDict()
     for bib_pos in bib_positions:
@@ -91,10 +94,13 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
     # Convert citations into <cite> tags
     docnames = set(b.text.doc.docname for b in response.bib.values())
     docnames_str = "|".join(docnames)
-    print(docnames_str)
     text_names = set(response.bib.keys())
-    citation_group_pattern = re.compile(f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\d+(, quote\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\d+((,|;) quote\\d+)*)?)*\\)")
-    citation_single_pattern = re.compile(f"((?P<citation>({docnames_str}) pages \\d+-\\d+),?(?P<quotes> quote\\d+((,|;) quote\\d+)*)?)((,|;) )?")
+    citation_group_pattern = re.compile(
+        f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\d+(, quote\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\d+((,|;) quote\\d+)*)?)*\\)"
+    )
+    citation_single_pattern = re.compile(
+        f"((?P<citation>({docnames_str}) pages \\d+-\\d+),?(?P<quotes> quote\\d+((,|;) quote\\d+)*)?)((,|;) )?"
+    )
 
     references_list = []
 
@@ -104,11 +110,15 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
 
     def replace_individual_citations(match: re.Match):
         quotes_text = match.groupdict()["quotes"]
-        text_name = match.groupdict()['citation'].strip()
+        text_name = match.groupdict()["citation"].strip()
         if text_name not in text_names:
             return ""
         if quotes_text:
-            return re.sub("(?P<q>quote\\d+)(, )?", lambda m: create_quote_tag(m, text_name), quotes_text)
+            return re.sub(
+                "(?P<q>quote\\d+)(, )?",
+                lambda m: create_quote_tag(m, text_name),
+                quotes_text,
+            )
         else:
             references_list.append(text_name)
             return f"<doc>{text_name}</doc>"
@@ -118,12 +128,15 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
         new_text = re.sub(citation_single_pattern, replace_individual_citations, text)
         return f"<cite>{new_text}</cite>"
 
-    response.answer = re.sub(citation_group_pattern, replace_with_tag, response.answer.strip())
+    response.answer = re.sub(
+        citation_group_pattern, replace_with_tag, response.answer.strip()
+    )
 
     period_citation_pattern = re.compile("\\.\\s*?(?P<citation><cite>.*?</cite>)")
+
     def move_period_mark(match: re.Match):
         return f"{match.groupdict()['citation']}."
-    
+
     response.answer = re.sub(period_citation_pattern, move_period_mark, response.answer)
     response.answer = re.sub(re.compile("\\.+"), ".", response.answer)
 
@@ -134,21 +147,24 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
         context = cast(Context, response.bib[docname])
         quote = None
         if " quote" in r:
-            try:
-                quote = context.points[int(r.split(" quote")[1]) - 1].quote
-            except:
-                pass
-        references.append({
-            "id": r,
-            "filepath": context.text.doc.filepath,
-            "citation": context.text.doc.citation,
-            "pages": context.text.pages,
-            "quote": quote,
-        })
+            # Retrieve quote
+            quote_idx = int(r.split(" quote")[1]) - 1
+            if quote_idx < len(context.points):
+                quote = context.points[quote_idx].quote
+
+        references.append(
+            {
+                "id": r,
+                "filepath": context.text.doc.filepath,
+                "citation": context.text.doc.citation,
+                "pages": context.text.pages,
+                "quote": quote,
+            }
+        )
     return {
         "question": response.question,
         "text": response.answer,
-        "references": references
+        "references": references,
     }
 
 

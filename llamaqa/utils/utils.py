@@ -80,7 +80,9 @@ def llm_parse_json(text: str) -> dict:
         ) from e
 
 
-async def gather_with_concurrency(n: int, coros: list[Coroutine], progress = False) -> list[Any]:
+async def gather_with_concurrency(
+    n: int, coros: list[Coroutine], progress=False
+) -> list[Any]:
     # https://stackoverflow.com/a/61478547/2392535
     semaphore = asyncio.Semaphore(n)
 

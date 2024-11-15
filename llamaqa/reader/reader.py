@@ -30,7 +30,7 @@ class Reader(BaseModel):
     llm_model: LLMModel
     embedding_model: EmbeddingModel
 
-    async def read_doc(
+    async def get_metadata(
         self,
         path: Path,
         title: Optional[str] = None,
@@ -42,18 +42,21 @@ class Reader(BaseModel):
         docname: str | None = None,
         dockey: Any | None = None,
         filepath: Optional[str] = None,
-        summarize_chunks = False,
-        **kwargs,
-    ) -> Doc:
+    ):
         # Parse citation
-        if any([arg is None for arg in [
-            citation,
-            title,
-            authors,
-            published_at,
-            doi,
-            abstract,
-        ]]):
+        if any(
+            [
+                arg is None
+                for arg in [
+                    citation,
+                    title,
+                    authors,
+                    published_at,
+                    doi,
+                    abstract,
+                ]
+            ]
+        ):
             # Peek first chunk
             texts = read_doc(
                 path,
@@ -71,14 +74,14 @@ class Reader(BaseModel):
             )
             try:
                 citation_json = result.to_json()
-                citation = citation or citation_json["citation"]
-                title = title or citation_json["title"]
-                authors = authors or citation_json["authors"]
-                published_at = published_at or citation_json["published_at"]
-                doi = doi or citation_json["doi"]
-                abstract = abstract or citation_json["abstract"]
+                citation = citation or citation_json.get("citation")
+                title = title or citation_json.get("title")
+                authors = authors or citation_json.get("authors")
+                published_at = published_at or citation_json.get("published_at")
+                doi = doi or citation_json.get("doi")
+                abstract = abstract or citation_json.get("abstract")
 
-            except:
+            except ValueError:
                 logger.warn("Unable to load JSON from parsed citation")
 
                 result = await self.llm_model.run_prompt(
@@ -92,10 +95,14 @@ class Reader(BaseModel):
                     or "Unknown" in citation
                     or "insufficient" in citation
                 ):
-                    citation = f"Unknown, {os.path.basename(path)}, {datetime.now().year}"
+                    citation = (
+                        f"Unknown, {os.path.basename(path)}, {datetime.now().year}"
+                    )
 
         if citation is None:
-            raise ValueError(f"Unable to infer citation for {path}, please provide a citation")
+            raise ValueError(
+                f"Unable to infer citation for {path}, please provide a citation"
+            )
 
         # Generate dockey from citation info to support dedup
         if dockey is None:
@@ -154,15 +161,46 @@ class Reader(BaseModel):
         #         query_kwargs["authors"] = authors
         #     if title:
         #         query_kwargs["title"] = title
-            
+
         #     doc = await metadata_client.upgrade_doc_to_doc_details(
         #         doc, **(query_kwargs | kwargs)
         #     )
 
         abstract_emb = None
         if abstract:
-            abstract_emb = (await self.embedding_model.embed_documents(texts=[abstract]))[0]
+            abstract_emb = (
+                await self.embedding_model.embed_documents(texts=[abstract])
+            )[0]
         doc.embedding = abstract_emb
+        return doc
+
+    async def read_doc(
+        self,
+        path: Path,
+        title: Optional[str] = None,
+        citation: Optional[str] = None,
+        abstract: Optional[str] = None,
+        authors: Optional[List[str]] | None = None,
+        published_at: Optional[str] = None,
+        doi: Optional[str] = None,
+        docname: str | None = None,
+        dockey: Any | None = None,
+        filepath: Optional[str] = None,
+        summarize_chunks=False,
+        **kwargs,
+    ) -> Doc:
+        doc = self.get_metadata(
+            path,
+            title,
+            citation,
+            abstract,
+            authors,
+            published_at,
+            doi,
+            docname,
+            dockey,
+            filepath,
+        )
 
         # Read document and chunk text
         texts = read_doc(
@@ -206,10 +244,10 @@ class Reader(BaseModel):
                 ],
                 progress=True,
             )
-            for text, summary in zip(texts, results):
+            for text, summary in zip(texts, results, strict=True):
                 text.summary = summary["summary"]
                 text.points = [Point(**p) for p in summary["points"]]
 
         doc.texts = texts
 
-        return doc        
+        return doc

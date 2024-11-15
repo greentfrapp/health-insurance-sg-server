@@ -19,12 +19,8 @@ load_dotenv()
 
 async def main():
     parse_config = ParsingSettings()
-    embedding_model = LiteLLMEmbeddingModel(
-        name="gemini/text-embedding-004"
-    )
-    llm_model = LiteLLMModel(
-        name="gemini/gemini-1.5-flash-002"
-    )
+    embedding_model = LiteLLMEmbeddingModel(name="gemini/text-embedding-004")
+    llm_model = LiteLLMModel(name="gemini/gemini-1.5-flash-002")
     reader = Reader(
         parse_config=parse_config,
         embedding_model=embedding_model,
@@ -35,7 +31,7 @@ async def main():
         supabase_url=os.environ["SUPABASE_URL"],
         supabase_key=os.environ["SUPABASE_SERVICE_KEY"],
     )
-    
+
     for policy in POLICIES:
         print(f"Uploading {policy['title']}...")
         doc = await reader.read_doc(

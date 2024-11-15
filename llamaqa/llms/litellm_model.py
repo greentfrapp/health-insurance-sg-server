@@ -1,17 +1,17 @@
+from sys import version_info
 from typing import (
     Any,
     AsyncIterable,
     Iterable,
     cast,
 )
+
 from pydantic import (
     ConfigDict,
     Field,
     TypeAdapter,
     model_validator,
 )
-from sys import version_info
-
 import litellm
 
 from .llm_model import (
@@ -53,7 +53,6 @@ DEFAULT_VERTEX_SAFETY_SETTINGS: list[dict[str, str]] = [
 def get_litellm_retrying_config(timeout: float = 60.0) -> dict[str, Any]:
     """Get retrying configuration for litellm.acompletion and litellm.aembedding."""
     return {"num_retries": 3, "timeout": timeout}
-
 
 
 class PassThroughRouter(litellm.Router):

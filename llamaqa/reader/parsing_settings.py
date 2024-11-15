@@ -25,9 +25,9 @@ CITATION_JSON_PROMPT = (
     "Bonus points for inferring the DOI. "
     "Return your result in the following format "
     "Use title, authors, citation, published_at, doi and abstract as keys. "
-    "\"citation\" should be the citation in MLA format. "
-    "\"authors\" should be a list of authors with correct capitalization. "
-    "\"published_at\" should be a formatted timestamp in the following format yyyy-mm-dd. "
+    '"citation" should be the citation in MLA format. '
+    '"authors" should be a list of authors with correct capitalization. '
+    '"published_at" should be a formatted timestamp in the following format yyyy-mm-dd. '
     "{text}\n\n"
     "Citation JSON:"
 )
@@ -121,10 +121,6 @@ class ParsingSettings(BaseModel):
 
     def is_chunking_valid_for_parsing(self, parsing: str):
         # must map the parsings because they won't include versions by default
-        return (
-            self.chunking_algorithm == ChunkingOptions.SIMPLE_OVERLAP
-            or parsing
-            in {  # type: ignore[unreachable]
-                _get_parse_type(p, self) for p in self.chunking_algorithm.valid_parsings
-            }
-        )
+        return self.chunking_algorithm == ChunkingOptions.SIMPLE_OVERLAP or parsing in {  # type: ignore[unreachable]
+            _get_parse_type(p, self) for p in self.chunking_algorithm.valid_parsings
+        }

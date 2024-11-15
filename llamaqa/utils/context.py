@@ -3,7 +3,7 @@ from pydantic import (
     ConfigDict,
     Field,
 )
-from typing import Dict, List
+from typing import List
 
 from ..reader.doc import Text, Point
 

@@ -105,18 +105,24 @@ class PaperQAAgent(ReActAgent):
             callback_manager=callback_manager,
             verbose=verbose,
         )
-        self.update_prompts({
-            "agent_worker:system_prompt": PromptTemplate(PAPERQA_SYSTEM_PROMPT)
-        })
+        self.update_prompts(
+            {"agent_worker:system_prompt": PromptTemplate(PAPERQA_SYSTEM_PROMPT)}
+        )
 
         self.cost_logger = cost_logger
 
     @classmethod
     def from_config(cls, **kwargs):
         supabase_url = kwargs.get("supabase_url", os.environ["SUPABASE_URL"])
-        supabase_service_key = kwargs.get("supabase_service_key", os.environ["SUPABASE_SERVICE_KEY"])
-        embedding_model_name = kwargs.get("embedding_model", "gemini/text-embedding-004")
-        summary_llm_model_name = kwargs.get("summary_llm_model", "gemini/gemini-1.5-flash-002")
+        supabase_service_key = kwargs.get(
+            "supabase_service_key", os.environ["SUPABASE_SERVICE_KEY"]
+        )
+        embedding_model_name = kwargs.get(
+            "embedding_model", "gemini/text-embedding-004"
+        )
+        summary_llm_model_name = kwargs.get(
+            "summary_llm_model", "gemini/gemini-1.5-flash-002"
+        )
         llm_model_name = kwargs.get("llm_model", "gemini/gemini-1.5-flash-002")
         toolspec = kwargs.get("toolspec")
         cost_logger = CostLogger()
@@ -127,8 +133,12 @@ class PaperQAAgent(ReActAgent):
                 supabase_key=supabase_service_key,
             )
             cache = Cache()
-            embedding_model = LiteLLMEmbeddingModel(name=embedding_model_name, cost_logger=cost_logger)
-            summary_llm_model = LiteLLMModel(name=summary_llm_model_name, cost_logger=cost_logger)
+            embedding_model = LiteLLMEmbeddingModel(
+                name=embedding_model_name, cost_logger=cost_logger
+            )
+            summary_llm_model = LiteLLMModel(
+                name=summary_llm_model_name, cost_logger=cost_logger
+            )
             toolspec = PaperQAToolSpec(
                 store=store,
                 cache=cache,
@@ -160,11 +170,23 @@ class PaperQAAgent(ReActAgent):
         self.toolspec = toolspec
         return self
 
-    async def stream_thoughts(self, query: str, current_document: Optional[str] = None, step_by_step = False):
-        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="Remember to call gather_evidence_by_query or gather_policy_overview if the user is asking about Singapore health insurance, especially if you are citing anything. You can access documents that the user is seeing via these tools. Otherwise, just answer as per usual. Please avoid questions unrelated to Singapore health insurance but explain. You can ask the user to elaborate or clarify."))
+    async def stream_thoughts(
+        self, query: str, current_document: Optional[str] = None, step_by_step=False
+    ):
+        self.memory.put(
+            ChatMessage(
+                role=MessageRole.SYSTEM,
+                content="Remember to call gather_evidence_by_query or gather_policy_overview if the user is asking about Singapore health insurance, especially if you are citing anything. You can access documents that the user is seeing via these tools. Otherwise, just answer as per usual. Please avoid questions unrelated to Singapore health insurance but explain. You can ask the user to elaborate or clarify.",
+            )
+        )
         if current_document:
             if current_document in VALID_POLICIES:
-                self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=f"The user is currently looking at \"{current_document}\". This might be relevant to their request."))
+                self.memory.put(
+                    ChatMessage(
+                        role=MessageRole.SYSTEM,
+                        content=f'The user is currently looking at "{current_document}". This might be relevant to their request.',
+                    )
+                )
         self.memory.put(ChatMessage(role=MessageRole.USER, content=query))
 
         worker = cast(PaperQAAgentWorker, self.agent_worker)
@@ -186,7 +208,7 @@ class PaperQAAgent(ReActAgent):
                     task.extra_state["current_reasoning"],
                     verbose=worker._verbose,
                 )
-            
+
             tools = worker.get_tools(task.input)
 
             input_chat = worker._react_chat_formatter.format(
@@ -206,29 +228,33 @@ class PaperQAAgent(ReActAgent):
 
                     response_buffer = ""
                     for chunk in chat_stream:
-                        value = chunk.message.content[len(response_buffer):]
-                        yield(value)
+                        value = chunk.message.content[len(response_buffer) :]
+                        yield value
                         response_buffer += value
-                        is_done = infer_stream_chunk_is_final(
-                            response_buffer, []
-                        )
+                        is_done = infer_stream_chunk_is_final(response_buffer, [])
                     response_success = True
                 except (APIConnectionError, ServiceUnavailableError) as e:
                     current_retry += 1
-                    if current_retry > num_retries: break
-                    logger.warn(str(e) + f"\nRetrying ({current_retry}/{num_retries}) after {retry_after}s...")
+                    if current_retry > num_retries:
+                        break
+                    logger.warn(
+                        str(e)
+                        + f"\nRetrying ({current_retry}/{num_retries}) after {retry_after}s..."
+                    )
                     await asyncio.sleep(retry_after)
             if not response_success:
-                self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=FALLBACK_RESPONSE_CONTENT))
-                yield(FALLBACK_FINAL_RESPONSE)
+                self.memory.put(
+                    ChatMessage(
+                        role=MessageRole.ASSISTANT, content=FALLBACK_RESPONSE_CONTENT
+                    )
+                )
+                yield FALLBACK_FINAL_RESPONSE
                 return
-            
+
             if not is_done:
                 tools = worker.get_tools(task.input)
-                tools_dict = {
-                    tool.metadata.get_name(): tool for tool in tools
-                }
-                
+                tools_dict = {tool.metadata.get_name(): tool for tool in tools}
+
                 # Extract tool to yield tool description
                 try:
                     # Temporarily disable verbose to prevent repeated logging
@@ -241,20 +267,22 @@ class PaperQAAgent(ReActAgent):
                     reasoning_step = cast(ActionReasoningStep, current_reasoning[-1])
                     if reasoning_step.action in tools_dict:
                         # Populate with default kwargs and log description
-                        try:
+                        if hasattr(
+                            tools_dict[reasoning_step.action].fn, "__default_kwargs__"
+                        ):
                             reasoning_step.action_input = {
-                                **tools_dict[reasoning_step.action].fn.__default_kwargs__,
+                                **tools_dict[
+                                    reasoning_step.action
+                                ].fn.__default_kwargs__,
                                 **reasoning_step.action_input,
                             }
-                        except:
-                            pass
                         thought = f"""Action Desc: {
                             tools_dict[reasoning_step.action].fn.__output_desc__.format(
                                 **reasoning_step.action_input
                             )
                         }"""
                         # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
-                        yield(thought)
+                        yield thought
                 except ValueError:
                     pass
 
@@ -263,16 +291,18 @@ class PaperQAAgent(ReActAgent):
                     task, tools=tools, output=response_buffer, is_streaming=True
                 )
                 if reasoning_steps[-1].observation.startswith("Found"):
-                    thought = "Action Output:" + reasoning_steps[-1].observation.split(".")[0]
+                    thought = (
+                        "Action Output:" + reasoning_steps[-1].observation.split(".")[0]
+                    )
                     # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
-                    yield(thought)
+                    yield thought
                 task.extra_state["current_reasoning"].extend(reasoning_steps)
 
                 step = step.get_next_step(
                     step_id=str(uuid.uuid4()),
                     input=None,
                 )
-            
+
             # Calculate cost with final chunk
             cost = completion_cost(
                 completion_response=ModelResponse(
@@ -282,7 +312,7 @@ class PaperQAAgent(ReActAgent):
                 custom_llm_provider=chunk.raw._hidden_params.get("custom_llm_provider"),
             )
             self.cost_logger.log_cost(cost)
-            
+
             if step_by_step:
                 interrupt = input("Enter to continue or 'q' to quit: ")
                 if interrupt == "q":
@@ -294,7 +324,9 @@ class PaperQAAgent(ReActAgent):
                     response_buffer = response_buffer.split("\nThought: ")[0]
                 if "```Thought: " in response_buffer:
                     response_buffer = response_buffer.split("```Thought: ")[0] + "```"
-                self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=response_buffer))
+                self.memory.put(
+                    ChatMessage(role=MessageRole.ASSISTANT, content=response_buffer)
+                )
             if iters >= max_iters:
                 break
 
@@ -302,7 +334,9 @@ class PaperQAAgent(ReActAgent):
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=final_response))
 
         recent_history = []
-        for i, message in enumerate(self.memory.chat_store.to_dict()["store"]["chat_history"][::-1]):
+        for i, message in enumerate(
+            self.memory.chat_store.to_dict()["store"]["chat_history"][::-1]
+        ):
             if message["role"] == "assistant":
                 if i != 0:
                     message["hidden"] = True
@@ -316,15 +350,15 @@ class PaperQAAgent(ReActAgent):
             else:
                 break
 
-        yield("Final Response: " + json.dumps(recent_history))
+        yield "Final Response: " + json.dumps(recent_history)
 
     def pprint_memory(self):
         class sty:
-            WHITE = '\033[37m'
-            CYAN = '\033[38;5;51m'
-            MAGENTA = '\033[38;5;207m'
-            BOLD = '\033[1m'
-            RESET = '\033[0m'
+            WHITE = "\033[37m"
+            CYAN = "\033[38;5;51m"
+            MAGENTA = "\033[38;5;207m"
+            BOLD = "\033[1m"
+            RESET = "\033[0m"
 
         for memory in self.memory.chat_store.store["chat_history"]:
             if memory.role == MessageRole.USER:

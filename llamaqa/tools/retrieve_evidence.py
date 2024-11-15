@@ -38,10 +38,12 @@ def retrieve_evidence(
     query: str,
 ):
     context_str = cache.get_string()
-    return QA_PROMPT.format(**{
-        "context": context_str,
-        "answer_length": "about 200 words, but can be longer",
-        "question": query,
-        "example_citation": EXAMPLE_CITATION,
-        "example_citation_quote": EXAMPLE_CITATION_QUOTE,
-    })
+    return QA_PROMPT.format(
+        **{
+            "context": context_str,
+            "answer_length": "about 200 words, but can be longer",
+            "question": query,
+            "example_citation": EXAMPLE_CITATION,
+            "example_citation_quote": EXAMPLE_CITATION_QUOTE,
+        }
+    )

@@ -20,7 +20,7 @@ class Text(Embeddable):
     pages: List[int] = []
     summary: Optional[str] = None
     points: List[Point] = []
-    
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         if len(self.pages) == 0:
@@ -36,7 +36,7 @@ class Text(Embeddable):
         if matches:
             start = int(matches.groups()[0])
             end = int(matches.groups()[1])
-            return [int(n+start) for n in np.arange(end-start+1)]
+            return [int(n + start) for n in np.arange(end - start + 1)]
         else:
             return []
 
