@@ -58,7 +58,7 @@ class ParsedText(BaseModel):
         enc = tiktoken.get_encoding("cl100k_base")
         if isinstance(self.content, str):
             return enc.encode_ordinary(self.content)
-        elif isinstance(self.content, list):  # noqa: RET505
+        elif isinstance(self.content, list):
             return [enc.encode_ordinary(c) for c in self.content]
         else:
             raise NotImplementedError(

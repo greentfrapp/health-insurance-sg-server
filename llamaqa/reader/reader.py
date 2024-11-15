@@ -91,7 +91,7 @@ class Reader(BaseModel):
                 )
                 citation = result.text
                 if (
-                    len(citation) < 3  # noqa: PLR2004
+                    len(citation) < 3
                     or "Unknown" in citation
                     or "insufficient" in citation
                 ):
@@ -214,7 +214,7 @@ class Reader(BaseModel):
         # loose check to see if document was loaded
         if (
             not texts
-            or len(texts[0].text) < 10  # noqa: PLR2004
+            or len(texts[0].text) < 10
             or (
                 not self.parse_config.disable_doc_valid_check
                 and not maybe_is_text(texts[0].text)

@@ -12,7 +12,7 @@ from tqdm import tqdm
 def is_coroutine_callable(obj):
     if inspect.isfunction(obj):
         return inspect.iscoroutinefunction(obj)
-    elif callable(obj):  # noqa: RET505
+    elif callable(obj):
         return inspect.iscoroutinefunction(obj.__call__)
     return False
 
@@ -33,17 +33,17 @@ def extract_score(text: str) -> int:
         score = re.search(r"([0-9]+)\w*\/", text)
     if score:
         s = int(score.group(1))
-        if s > 10:  # noqa: PLR2004
+        if s > 10:
             s = int(s / 10)  # sometimes becomes out of 100
         return s
     last_few = text[-15:]
     scores = re.findall(r"([0-9]+)", last_few)
     if scores:
         s = int(scores[-1])
-        if s > 10:  # noqa: PLR2004
+        if s > 10:
             s = int(s / 10)  # sometimes becomes out of 100
         return s
-    if len(text) < 100:  # noqa: PLR2004
+    if len(text) < 100:
         return 1
     return 5
 

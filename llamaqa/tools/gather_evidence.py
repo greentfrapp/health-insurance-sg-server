@@ -26,7 +26,7 @@ Provide a summary of the relevant information that could help answer the questio
 }}
 
 where `summary` is relevant information from text - {summary_length} words, `relevance_score` is the relevance of `summary` to answer question (out of 10), and `points` is an array of `point` and `quote` pairs that supports the summary where each `quote` is an exact match quote (max 50 words) from the text that best supports the respective `point`. Make sure that the quote is an exact match without truncation or changes. Do not truncate the quote with any ellipsis.
-"""  # noqa: E501
+"""
 
 
 SUMMARY_JSON_PROMPT = (

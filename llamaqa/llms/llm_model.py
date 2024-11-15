@@ -92,7 +92,7 @@ class LLMModel(ABC, BaseModel):
         """Return the completion as string and the number of tokens in the prompt and completion."""
         raise NotImplementedError
 
-    async def acomplete_iter(self, prompt: str) -> AsyncIterable[Chunk]:  # noqa: ARG002
+    async def acomplete_iter(self, prompt: str) -> AsyncIterable[Chunk]:
         """Return an async generator that yields chunks of the completion.
 
         Only the last tuple will be non-zero.
@@ -107,7 +107,7 @@ class LLMModel(ABC, BaseModel):
 
     async def achat_iter(
         self,
-        messages: Iterable[dict[str, str]],  # noqa: ARG002
+        messages: Iterable[dict[str, str]],
     ) -> AsyncIterable[Chunk]:
         """Return an async generator that yields chunks of the completion.
 

@@ -54,7 +54,7 @@ class ChunkingOptions(StrEnum):
         # Note that SIMPLE_OVERLAP must be valid for all by default
         # TODO: implement for future parsing options
         valid_parsing_dict: dict[str, list[ParsingOptions]] = {}
-        return valid_parsing_dict.get(self.value, [])  # noqa: FURB184
+        return valid_parsing_dict.get(self.value, [])
 
 
 class ParsingSettings(BaseModel):
