@@ -1,7 +1,6 @@
 from datetime import datetime
 from uuid import UUID, uuid4
 import contextvars
-import json
 import logging
 import re
 
@@ -10,6 +9,7 @@ from pydantic import (
     Field,
     computed_field,
 )
+import dirtyjson
 import litellm
 
 
@@ -34,14 +34,17 @@ def llm_parse_json(text: str) -> dict:
     # https://regex101.com/r/VFcDmB/1
     pattern = r'"(?:[^"\\]|\\.)*"'
     ptext = re.sub(pattern, escape_newlines, ptext)
+
+    error_message = (
+        f"Failed to parse JSON from text {text!r}. Your model may not be capable of"
+        " supporting JSON output or our parsing technique could use some work. Try"
+        " a different model"
+    )
+
     try:
-        return json.loads(ptext)
-    except json.JSONDecodeError as e:
-        raise ValueError(
-            f"Failed to parse JSON from text {text!r}. Your model may not be capable of"
-            " supporting JSON output or our parsing technique could use some work. Try"
-            " a different model or specify `Settings(prompts={'use_json': False})`"
-        ) from e
+        return dirtyjson.loads(ptext)
+    except dirtyjson.error.Error as e:
+        raise ValueError(error_message) from e
 
 
 class LLMResult(BaseModel):

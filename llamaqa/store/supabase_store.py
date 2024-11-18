@@ -229,6 +229,25 @@ class SupabaseStore(VectorStore):
             scores[i] for i in selected_indices
         ]
 
+    async def get_existing_dockeys(self) -> List[str]:
+        supabase = await create_async_client(self.supabase_url, self.supabase_key)
+        
+        start = 0
+        batchsize = 1000
+        data = []
+        while True:
+            response = (
+                await supabase.table("documents")
+                .select("id")
+                .range(start, start + batchsize - 1)
+                .execute()
+            )
+            data += response.data
+            if len(response.data) < batchsize:
+                break
+            
+        return [r["id"] for r in data]
+
     async def upload(
         self,
         doc: Doc,
@@ -262,7 +281,7 @@ class SupabaseStore(VectorStore):
         except APIError as e:
             if e.message.startswith("duplicate key"):
                 if ignore_duplicate_doc:
-                    pass
+                    return
                 else:
                     raise ValueError(
                         "Another document with the same citation has already been uploaded previously"

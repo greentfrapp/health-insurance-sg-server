@@ -5,6 +5,7 @@ import logging
 import os
 import re
 
+from dateutil.parser import parse
 from pydantic import (
     BaseModel,
 )
@@ -73,16 +74,25 @@ class Reader(BaseModel):
                 skip_system=True,  # skip system because it's too hesitant to answer
             )
             try:
+                # TODO: Check for valid objects here i.e. authors should be list,
+                # published_at should be valid datetime and doi should be valid DOI,
+                # while the rest should be strings
                 citation_json = result.to_json()
                 citation = citation or citation_json.get("citation")
                 title = title or citation_json.get("title")
                 authors = authors or citation_json.get("authors")
                 published_at = published_at or citation_json.get("published_at")
+                # Handle non-parsable datetime strings
+                if published_at is not None:
+                    try:
+                        parse(published_at)
+                    except ValueError:
+                        published_at = None
                 doi = doi or citation_json.get("doi")
                 abstract = abstract or citation_json.get("abstract")
 
-            except ValueError:
-                logger.warn("Unable to load JSON from parsed citation")
+            except (ValueError, AttributeError) as e:
+                logger.warning(e)
 
                 result = await self.llm_model.run_prompt(
                     prompt=self.parse_config.citation_prompt,
@@ -189,7 +199,7 @@ class Reader(BaseModel):
         summarize_chunks=False,
         **kwargs,
     ) -> Doc:
-        doc = self.get_metadata(
+        doc = await self.get_metadata(
             path,
             title,
             citation,
@@ -222,7 +232,7 @@ class Reader(BaseModel):
         ):
             raise ValueError(
                 f"This does not look like a text document: {path}. Pass disable_check"
-                " to ignore this error."
+                f" to ignore this error. Contents: {texts}"
             )
 
         for t, t_embedding in zip(
