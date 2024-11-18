@@ -28,23 +28,19 @@ POLICY_IDS = {
         "f0b54e98-717a-5885-829f-a864fad579ee",
         "8a7a2294-30c1-571d-8283-a3081453c356",
     ],
-    "HSBC Life Shield": [
-        "6cc41526-50a4-51f9-ab47-7ee5feee88d2"
-    ],
-    "Prudential PRUShield": [
-        "ffe2c6de-fa78-55e0-a3e8-055a037fa4dd"
-    ],
+    "HSBC Life Shield": ["6cc41526-50a4-51f9-ab47-7ee5feee88d2"],
+    "Prudential PRUShield": ["ffe2c6de-fa78-55e0-a3e8-055a037fa4dd"],
     "Raffles Shield": [
         "cbf7daf7-f3fe-5404-8ffb-7d5d9e23befe",
         "45918a4b-3880-5f0c-943f-9e103a728367",
         "5282cc11-29f8-59db-a3e9-efdf3ee004ce",
-        "ac65abe4-410f-5d3e-947b-9f7b70a7ac54"
+        "ac65abe4-410f-5d3e-947b-9f7b70a7ac54",
     ],
     "Singlife Shield": [
         "64e5835a-a309-55bc-90e6-6d213f4fd1a2",
         "fc433f39-02eb-5614-88fd-9dc2fae4411a",
         "3e4c8e36-b7c2-5ad4-b742-4f30ee92d97a",
-        "8bdfe6fd-20a3-5f64-b186-4135f9a70836"
+        "8bdfe6fd-20a3-5f64-b186-4135f9a70836",
     ],
 }
 

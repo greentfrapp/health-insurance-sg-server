@@ -20,8 +20,11 @@ def output_descriptor(desc: str):
     return decorator_add_descriptor
 
 
-def tool_metadata(desc: str = "", output_desc: str = "", default_kwargs: Optional[Dict] = None):
+def tool_metadata(
+    desc: str = "", output_desc: str = "", default_kwargs: Optional[Dict] = None
+):
     default_kwargs = default_kwargs or {}
+
     def decorator_add_metadata(func: Callable):
         func.__doc__ = desc or func.__doc__
         func.__output_desc__ = output_desc
