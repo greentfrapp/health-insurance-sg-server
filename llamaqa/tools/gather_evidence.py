@@ -1,13 +1,13 @@
 from functools import partial
-from typing import Any, Coroutine, Optional, cast
-import asyncio
+from typing import Optional, cast
 
+from .utils import map_fxn_summary
 from ..store.supabase_store import SupabaseStore
 from ..utils.cache import Cache
 from ..utils.context import Context
 from ..utils.utils import (
+    gather_with_concurrency,
     llm_parse_json,
-    map_fxn_summary,
 )
 
 
@@ -26,7 +26,7 @@ Provide a summary of the relevant information that could help answer the questio
 }}
 
 where `summary` is relevant information from text - {summary_length} words, `relevance_score` is the relevance of `summary` to answer question (out of 10), and `points` is an array of `point` and `quote` pairs that supports the summary where each `quote` is an exact match quote (max 50 words) from the text that best supports the respective `point`. Make sure that the quote is an exact match without truncation or changes. Do not truncate the quote with any ellipsis.
-"""  # noqa: E501
+"""
 
 
 SUMMARY_JSON_PROMPT = (
@@ -38,18 +38,6 @@ class EmptyDocsError(RuntimeError):
     """Error to throw when we needed docs to be present."""
 
 
-async def gather_with_concurrency(n: int, coros: list[Coroutine]) -> list[Any]:
-    # https://stackoverflow.com/a/61478547/2392535
-    semaphore = asyncio.Semaphore(n)
-
-    async def sem_coro(coro):
-        async with semaphore:
-            return await coro
-
-    return await asyncio.gather(*(sem_coro(c) for c in coros))
-
-
-
 async def gather_evidence(
     cache: Cache,
     store: SupabaseStore,
@@ -57,8 +45,8 @@ async def gather_evidence(
     policy: Optional[str] = None,
     k: int = 5,
     mmr_lambda: float = 0.9,
-    embedding_model = None,
-    summary_llm_model = None,
+    embedding_model=None,
+    summary_llm_model=None,
     prefix: str = "",
 ):
     """
@@ -75,7 +63,7 @@ async def gather_evidence(
     Returns:
         String describing gathered evidence and the current status.
     """
-    
+
     store.mmr_lambda = mmr_lambda
 
     if query is None and policy is None:
@@ -84,17 +72,23 @@ async def gather_evidence(
     # If query is None, retrieve all info about given policy
     if query is None:
         matches = await store.get_all_policy_info([policy])
-        summaries = [Context(
-            context=match.summary,
-            text=match,
-            score=5,
-            points=match.points,
-        ) for match in matches]
+        summaries = [
+            Context(
+                context=match.summary,
+                text=match,
+                score=5,
+                points=match.points,
+            )
+            for match in matches
+        ]
     # Use vector retrieval
     else:
         matches = (
             await store.max_marginal_relevance_search(
-                query, k=k, fetch_k=2 * k, embedding_model=embedding_model,
+                query,
+                k=k,
+                fetch_k=2 * k,
+                embedding_model=embedding_model,
                 policies=[policy],
             )
         )[0]

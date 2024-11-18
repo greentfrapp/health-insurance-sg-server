@@ -19,18 +19,25 @@ CITATION_PROMPT = (
 )
 
 
-CITATION_JSON_PROMPT = (
-    "Infer the title, authors, citation, publication date, doi and abstract as a JSON from this text. "
-    "If any field can not be found, return it as null. "
-    "Bonus points for inferring the DOI. "
-    "Return your result in the following format "
-    "Use title, authors, citation, published_at, doi and abstract as keys. "
-    "\"citation\" should be the citation in MLA format. "
-    "\"authors\" should be a list of authors with correct capitalization. "
-    "\"published_at\" should be a formatted timestamp in the following format yyyy-mm-dd. "
-    "{text}\n\n"
-    "Citation JSON:"
-)
+CITATION_JSON_PROMPT = """
+{text}
+
+Infer the title, authors, citation, publication date, doi and abstract as a JSON from the text above.
+If any field can not be found, return it as null.
+Bonus points for inferring the DOI.
+Return your result in the following format:
+{{
+    "title": <title>,
+    "authors": [<author1>, <author2>, ...],
+    "citation": <citation>,
+    "published_at": "yyyy-mm-dd",
+    "doi": <doi>,
+    "abstract": <abstract>,
+}}
+"citation" should be the citation in MLA format.
+"authors" should be a list of authors with correct capitalization.
+"published_at" should be a formatted timestamp in the following format yyyy-mm-dd.
+"""
 
 
 class ParsingOptions(StrEnum):
@@ -54,7 +61,7 @@ class ChunkingOptions(StrEnum):
         # Note that SIMPLE_OVERLAP must be valid for all by default
         # TODO: implement for future parsing options
         valid_parsing_dict: dict[str, list[ParsingOptions]] = {}
-        return valid_parsing_dict.get(self.value, [])  # noqa: FURB184
+        return valid_parsing_dict.get(self.value, [])
 
 
 class ParsingSettings(BaseModel):
@@ -121,10 +128,6 @@ class ParsingSettings(BaseModel):
 
     def is_chunking_valid_for_parsing(self, parsing: str):
         # must map the parsings because they won't include versions by default
-        return (
-            self.chunking_algorithm == ChunkingOptions.SIMPLE_OVERLAP
-            or parsing
-            in {  # type: ignore[unreachable]
-                _get_parse_type(p, self) for p in self.chunking_algorithm.valid_parsings
-            }
-        )
+        return self.chunking_algorithm == ChunkingOptions.SIMPLE_OVERLAP or parsing in {  # type: ignore[unreachable]
+            _get_parse_type(p, self) for p in self.chunking_algorithm.valid_parsings
+        }

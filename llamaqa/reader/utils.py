@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import math
 import os
 import re
@@ -8,9 +9,9 @@ from pathlib import Path
 from typing import ClassVar, Literal, overload
 from uuid import uuid5, UUID
 
-import pymupdf
 import pypdf
 import tiktoken
+from dirtyjson.attributed_containers import AttributedDict
 from html2text import __version__ as html2text_version
 from html2text import html2text
 from pydantic import BaseModel
@@ -18,6 +19,9 @@ from pydantic import BaseModel
 from llamaqa import __version__ as llamaqa_version
 from ..llms.llm_model import LLMModel
 from ..reader.doc import Doc, Text
+
+
+logger = logging.getLogger(__name__)
 
 
 NAMESPACE_CITATION = UUID("5345abad-94db-4db0-a1b1-6107ba7a4cb7")
@@ -59,7 +63,7 @@ class ParsedText(BaseModel):
         enc = tiktoken.get_encoding("cl100k_base")
         if isinstance(self.content, str):
             return enc.encode_ordinary(self.content)
-        elif isinstance(self.content, list):  # noqa: RET505
+        elif isinstance(self.content, list):
             return [enc.encode_ordinary(c) for c in self.content]
         else:
             raise NotImplementedError(
@@ -479,7 +483,11 @@ Summarize the text above and respond with the following JSON format:
     {{
         "quote": "...",
         "point": "..."
-    }}
+    }},
+    {{
+        "quote": "...",
+        "point": "..."
+    }},...
   ]
 }}
 
@@ -499,12 +507,24 @@ If the text is a placeholder or if there is nothing to summarize, simply return 
 """
 
 
-async def summarize_chunk(text: str, llm_model: LLMModel):
-    result = await llm_model.run_prompt(
-        prompt=SUMMARY_JSON_PROMPT,
-        data={"text": text},
-        skip_system=True,  # skip system because it's too hesitant to answer
-    )
-    summary_json = result.to_json()
+async def summarize_chunk(text: str, llm_model: LLMModel, max_tries: int = 5):
+    tries = 0
+    result = None
+    while True:
+        tries += 1
+        if tries > max_tries:
+            logger.warning(f"Failed to generate summary after {max_tries} tries, returning empty summary")
+            return {"summary": None, "points": []}
+        result = await llm_model.run_prompt(
+            prompt=SUMMARY_JSON_PROMPT,
+            data={"text": text},
+            skip_system=True,  # skip system because it's too hesitant to answer
+        )
+        summary_json = None
+        try:
+            summary_json = result.to_json()
+        except ValueError:
+            logger.warning(f"Failed to generate summary from: {result}, retrying...")
+        if type(summary_json) == AttributedDict and "summary" in summary_json and "points" in summary_json:
+            break
     return summary_json
-

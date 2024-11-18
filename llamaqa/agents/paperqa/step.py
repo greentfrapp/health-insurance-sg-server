@@ -10,6 +10,10 @@ from typing import (
     cast,
 )
 
+from llama_index.core.agent.react.step import (
+    ReActAgentWorker,
+    add_user_step_to_reasoning,
+)
 from llama_index.core.agent.react.types import (
     ActionReasoningStep,
     BaseReasoningStep,
@@ -37,10 +41,6 @@ from llama_index.core.utils import print_text
 
 dispatcher = get_dispatcher(__name__)
 
-from llama_index.core.agent.react.step import (
-    ReActAgentWorker,
-    add_user_step_to_reasoning,
-)
 
 class PaperQAAgentWorker(ReActAgentWorker):
     def _get_task_step_response(
@@ -66,7 +66,7 @@ class PaperQAAgentWorker(ReActAgentWorker):
         )
 
     def _extract_reasoning_step(
-        self, output: ChatResponse|str, is_streaming: bool = False
+        self, output: ChatResponse | str, is_streaming: bool = False
     ) -> Tuple[str, List[BaseReasoningStep], bool]:
         """
         Extracts the reasoning step from the given output.

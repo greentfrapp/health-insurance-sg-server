@@ -1,10 +1,5 @@
 from abc import ABC
 from inspect import isasyncgenfunction, signature
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    Field,
-)
 from typing import (
     Any,
     AsyncGenerator,
@@ -13,6 +8,7 @@ from typing import (
     Awaitable,
     Callable,
     Iterable,
+    Optional,
     TypeVar,
 )
 import asyncio
@@ -20,6 +16,11 @@ import contextlib
 import functools
 import logging
 
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+)
 
 from ..utils.utils import is_coroutine_callable
 from .llm_result import LLMResult
@@ -33,7 +34,7 @@ CHARACTERS_PER_TOKEN_ASSUMPTION: float = 4.0
 # Taken from empirical counts in tests
 EXTRA_TOKENS_FROM_USER_ROLE: int = 7
 
-default_system_prompt = ""
+DEFAULT_SYSTEM_PROMPT = ""
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +65,7 @@ class Chunk(BaseModel):
     text: str | None
     prompt_tokens: int
     completion_tokens: int
+    cost: Optional[float] = None
 
     def __str__(self):
         return self.text
@@ -90,7 +92,7 @@ class LLMModel(ABC, BaseModel):
         """Return the completion as string and the number of tokens in the prompt and completion."""
         raise NotImplementedError
 
-    async def acomplete_iter(self, prompt: str) -> AsyncIterable[Chunk]:  # noqa: ARG002
+    async def acomplete_iter(self, prompt: str) -> AsyncIterable[Chunk]:
         """Return an async generator that yields chunks of the completion.
 
         Only the last tuple will be non-zero.
@@ -104,7 +106,8 @@ class LLMModel(ABC, BaseModel):
         raise NotImplementedError
 
     async def achat_iter(
-        self, messages: Iterable[dict[str, str]]  # noqa: ARG002
+        self,
+        messages: Iterable[dict[str, str]],
     ) -> AsyncIterable[Chunk]:
         """Return an async generator that yields chunks of the completion.
 
@@ -127,7 +130,7 @@ class LLMModel(ABC, BaseModel):
         callbacks: list[Callable] | None = None,
         name: str | None = None,
         skip_system: bool = False,
-        system_prompt: str = default_system_prompt,
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
     ) -> LLMResult:
         if self.llm_type is None:
             self.llm_type = self.infer_llm_type()
@@ -148,7 +151,7 @@ class LLMModel(ABC, BaseModel):
         callbacks: list[Callable] | None = None,
         name: str | None = None,
         skip_system: bool = False,
-        system_prompt: str = default_system_prompt,
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
     ) -> LLMResult:
         """Run a chat prompt.
 
@@ -224,7 +227,7 @@ class LLMModel(ABC, BaseModel):
         callbacks: Iterable[Callable] | None = None,
         name: str | None = None,
         skip_system: bool = False,
-        system_prompt: str = default_system_prompt,
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
     ) -> LLMResult:
         """Run a completion prompt.
 
@@ -300,7 +303,6 @@ def rate_limited(
     async def wrapper(
         self: LLMModelOrChild, *args: Any, **kwargs: Any
     ) -> Chunk | AsyncIterator[Chunk] | AsyncIterator[LLMModelOrChild]:
-
         if not hasattr(self, "check_rate_limit"):
             raise NotImplementedError(
                 f"Model {self.name} must have a `check_rate_limit` method."
