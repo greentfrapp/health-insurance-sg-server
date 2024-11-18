@@ -49,9 +49,10 @@ from ...llms import (
     LiteLLMModel,
 )
 from ...store.supabase_store import SupabaseStore
-from ...tools.paperqa_tools import PaperQAToolSpec, VALID_POLICIES
+from ...tools.paperqa_tools import PaperQAToolSpec
 from ...utils.cache import Cache
 from ...utils.logger import CostLogger
+from ...utils.policies import VALID_POLICIES
 
 
 logger = logging.getLogger("paperqa-agent")

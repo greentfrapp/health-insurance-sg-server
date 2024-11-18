@@ -8,12 +8,12 @@ from postgrest.exceptions import APIError
 from supabase._async.client import create_client as create_async_client
 import numpy as np
 
-from .policy_ids import POLICY_IDS
 from .store import VectorStore, cosine_similarity
 from .utils import upload_chunk
 from ..llms.embedding_model import EmbeddingModel
 from ..reader.doc import Doc, Text, Point
 from ..utils.embeddable import Embeddable
+from ..utils.policies import POLICY_IDS
 from ..utils.utils import gather_with_concurrency
 
 

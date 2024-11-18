@@ -11,19 +11,7 @@ from ..llms.llm_model import LLMModel
 from ..store.store import VectorStore
 from ..utils.cache import Cache
 from ..utils.logger import CostLogger
-
-
-VALID_POLICIES = [
-    # "MediShield Life",
-    # "NTUC Income IncomeShield Standard Plan",
-    # "NTUC Income Enhanced IncomeShield",
-    "AIA HealthShield Gold",
-    "Great Eastern GREAT SupremeHealth",
-    # "HSBC Life Shield",
-    # "Prudential PRUShield",
-    # "Raffles Shield",
-    # "Singlife Shield",
-]
+from ..utils.policies import VALID_POLICIES
 
 
 class PaperQAToolSpec(BaseToolSpec):

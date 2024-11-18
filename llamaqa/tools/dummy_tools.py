@@ -2,25 +2,13 @@ from typing import Optional
 
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
 
+from .retrieve_evidence import retrieve_evidence
+from .utils import tool_metadata
 from ..llms.embedding_model import EmbeddingModel
 from ..llms.llm_model import LLMModel
 from ..store.store import VectorStore
 from ..utils.cache import Cache
-from .retrieve_evidence import retrieve_evidence
-from .utils import tool_metadata
-
-
-VALID_POLICIES = [
-    "MediShield Life",
-    "NTUC Income IncomeShield Standard Plan",
-    "NTUC Income Enhanced IncomeShield",
-    "AIA HealthShield Gold",
-    "Great Eastern GREAT SupremeHealth",
-    "HSBC Life Shield",
-    "Prudential PRUShield",
-    "Raffles Shield",
-    "Singlife Shield",
-]
+from ..utils.policies import VALID_POLICIES
 
 
 class DummyToolSpec(BaseToolSpec):

@@ -1,4 +1,5 @@
-from ...tools.paperqa_tools import VALID_POLICIES
+from ...utils.policies import VALID_POLICIES
+
 
 PAPERQA_SYSTEM_PROMPT = f"""\
 
