@@ -231,7 +231,7 @@ class SupabaseStore(VectorStore):
 
     async def get_existing_dockeys(self) -> List[str]:
         supabase = await create_async_client(self.supabase_url, self.supabase_key)
-        
+
         start = 0
         batchsize = 1000
         data = []
@@ -245,7 +245,7 @@ class SupabaseStore(VectorStore):
             data += response.data
             if len(response.data) < batchsize:
                 break
-            
+
         return [r["id"] for r in data]
 
     async def upload(

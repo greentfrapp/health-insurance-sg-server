@@ -30,5 +30,6 @@ class CostLogger(BaseModel):
 
     def get_split(self):
         split_cost = self._total_cost - self._split_start
-        self.logger.info(f"{self._STY_COLOR}Split cost: {split_cost}USD{self._STY_RESET}")
-
+        self.logger.info(
+            f"{self._STY_COLOR}Split cost: {split_cost}USD{self._STY_RESET}"
+        )

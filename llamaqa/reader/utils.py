@@ -513,7 +513,9 @@ async def summarize_chunk(text: str, llm_model: LLMModel, max_tries: int = 5):
     while True:
         tries += 1
         if tries > max_tries:
-            logger.warning(f"Failed to generate summary after {max_tries} tries, returning empty summary")
+            logger.warning(
+                f"Failed to generate summary after {max_tries} tries, returning empty summary"
+            )
             return {"summary": None, "points": []}
         result = await llm_model.run_prompt(
             prompt=SUMMARY_JSON_PROMPT,
@@ -525,6 +527,10 @@ async def summarize_chunk(text: str, llm_model: LLMModel, max_tries: int = 5):
             summary_json = result.to_json()
         except ValueError:
             logger.warning(f"Failed to generate summary from: {result}, retrying...")
-        if type(summary_json) == AttributedDict and "summary" in summary_json and "points" in summary_json:
+        if (
+            type(summary_json) is AttributedDict
+            and "summary" in summary_json
+            and "points" in summary_json
+        ):
             break
     return summary_json

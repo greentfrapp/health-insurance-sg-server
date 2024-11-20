@@ -19,32 +19,53 @@ logger = logging.getLogger(__name__)
 cvar_answer_id = contextvars.ContextVar[UUID | None]("answer_id", default=None)
 
 
+def find_json(rgx: str, text: str):
+    match = re.search(rgx, text)
+    if match is None:
+        return None
+    else:
+        return match.groupdict().get("json")
+
+
 def llm_parse_json(text: str) -> dict:
     """Read LLM output and extract JSON data from it."""
-    # fetch from markdown ```json if present
-    ptext = text.strip().split("```json")[-1].split("```")[0]
-    # split anything before the first { after the last }
-    ptext = ("{" + ptext.split("{", 1)[-1]).rsplit("}", 1)[0] + "}"
 
-    def escape_newlines(match: re.Match) -> str:
-        return match.group(0).replace("\n", "\\n")
+    # First check for ```json
+    code_snippet_pattern = r"```json(?P<json>(.|\s|\n)*?)```"
+    code_snippet_result = find_json(code_snippet_pattern, text)
+    # Then try to find the longer match between [.*?] and {.*?}
+    array_pattern = r"(?P<json>\[(.|\s|\n)*\])"
+    array_result = find_json(array_pattern, text)
+    dict_pattern = r"(?P<json>{(.|\s|\n)*})"
+    dict_result = find_json(dict_pattern, text)
 
-    # Match anything between double quotes
-    # including escaped quotes and other escaped characters.
-    # https://regex101.com/r/VFcDmB/1
-    pattern = r'"(?:[^"\\]|\\.)*"'
-    ptext = re.sub(pattern, escape_newlines, ptext)
+    if array_result and dict_result and len(dict_result) > len(array_result):
+        results = [
+            code_snippet_result,
+            dict_result,
+            array_result,
+        ]
+    else:
+        results = [
+            code_snippet_result,
+            array_result,
+            dict_result,
+        ]
+
+    # Try each result in order
+    for result in results:
+        if result is not None:
+            try:
+                return dirtyjson.loads(result)
+            except dirtyjson.error.Error:
+                continue
 
     error_message = (
         f"Failed to parse JSON from text {text!r}. Your model may not be capable of"
         " supporting JSON output or our parsing technique could use some work. Try"
         " a different model"
     )
-
-    try:
-        return dirtyjson.loads(ptext)
-    except dirtyjson.error.Error as e:
-        raise ValueError(error_message) from e
+    raise ValueError(error_message)
 
 
 class LLMResult(BaseModel):

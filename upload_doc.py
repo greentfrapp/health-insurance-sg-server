@@ -27,8 +27,12 @@ cost_logger.logger.setLevel(logging.INFO)
 async def main():
     parse_config = ParsingSettings()
     parse_config.disable_doc_valid_check = True
-    embedding_model = LiteLLMEmbeddingModel(name="gemini/text-embedding-004", cost_logger=cost_logger)
-    llm_model = LiteLLMModel(name="gemini/gemini-1.5-flash-002", cost_logger=cost_logger)
+    embedding_model = LiteLLMEmbeddingModel(
+        name="gemini/text-embedding-004", cost_logger=cost_logger
+    )
+    llm_model = LiteLLMModel(
+        name="gemini/gemini-1.5-flash-002", cost_logger=cost_logger
+    )
     reader = Reader(
         parse_config=parse_config,
         embedding_model=embedding_model,
@@ -39,7 +43,7 @@ async def main():
         supabase_url=os.environ["SUPABASE_URL"],
         supabase_key=os.environ["SUPABASE_SERVICE_KEY"],
     )
-    existing_dockeys = await store.get_existing_dockeys()
+    # existing_dockeys = await store.get_existing_dockeys()
 
     for i, policy in enumerate(POLICIES):
         if i < 23:
@@ -51,7 +55,7 @@ async def main():
         #     **policy,
         #     summarize_chunks=False,
         # )
-        
+
         # if doc.dockey in existing_dockeys:
         #     print(f"{policy['title']} already uploaded")
         #     continue

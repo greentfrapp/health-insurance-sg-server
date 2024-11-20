@@ -65,8 +65,7 @@ Args:
         )
 
     @tool_metadata(
-        desc=
-        f"""
+        desc=f"""
 Find all information about a policy.
 This is useful when you want to get key features about a policy,
 summarize a policy, or broadly compare different policies.
