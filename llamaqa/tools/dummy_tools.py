@@ -2,13 +2,13 @@ from typing import Optional
 
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
 
-from .retrieve_evidence import retrieve_evidence
-from .utils import tool_metadata
 from ..llms.embedding_model import EmbeddingModel
 from ..llms.llm_model import LLMModel
 from ..store.store import VectorStore
 from ..utils.cache import Cache
 from ..utils.policies import VALID_POLICIES
+from .retrieve_evidence import retrieve_evidence
+from .utils import tool_metadata
 
 
 class DummyToolSpec(BaseToolSpec):

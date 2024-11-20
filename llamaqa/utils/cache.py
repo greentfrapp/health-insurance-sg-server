@@ -1,8 +1,7 @@
 from typing import List, Optional
 
-from .context import Context
 from ..reader.doc import Point
-
+from .context import Context
 
 CONTEXT_OUTER_PROMPT = "{context_str}\n\nValid Keys: {valid_keys}"
 CONTEXT_INNER_PROMPT = "{name}: {text}\nFrom {citation}"

@@ -1,14 +1,15 @@
+from typing import Any
+from uuid import UUID, uuid4
+
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
     model_validator,
 )
-from typing import Any
-from uuid import UUID, uuid4
 
-from .context import Context
 from ..reader.doc import Doc, Text
+from .context import Context
 
 
 class Answer(BaseModel):
