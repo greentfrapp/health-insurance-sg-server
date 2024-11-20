@@ -1,15 +1,11 @@
 from functools import partial
 from typing import Optional, cast
 
-from .utils import map_fxn_summary
 from ..store.supabase_store import SupabaseStore
 from ..utils.cache import Cache
 from ..utils.context import Context
-from ..utils.utils import (
-    gather_with_concurrency,
-    llm_parse_json,
-)
-
+from ..utils.utils import gather_with_concurrency, llm_parse_json
+from .utils import map_fxn_summary
 
 SUMMARY_JSON_SYSTEM_PROMPT = """\
 Provide a summary of the relevant information that could help answer the question based on the excerpt. Respond with the following JSON format:
@@ -89,7 +85,7 @@ async def gather_evidence(
                 k=k,
                 fetch_k=2 * k,
                 embedding_model=embedding_model,
-                policies=[policy],
+                policies=[policy] if policy is not None else None,
             )
         )[0]
 
