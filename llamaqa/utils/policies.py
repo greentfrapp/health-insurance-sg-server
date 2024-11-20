@@ -20,7 +20,7 @@ POLICY_IDS = {
         "ae49e93b-8a16-5ee2-a8b9-4cc8e2fc19c4",
         "7a750695-af10-51d7-8ffb-c3aa7d69bf53",
     ],
-    "AIA HealthShield Gold": [
+    "AIA HealthShield Gold Max": [
         "3ad73a96-cac0-5fc0-812b-6fd0539a6ae6",
         "7e677840-492f-5c19-bf28-e58e4adc622c",
     ],
