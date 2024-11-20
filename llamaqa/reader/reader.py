@@ -1,16 +1,19 @@
-from datetime import datetime
-from pathlib import Path
-from typing import Any, List, Optional, cast
 import logging
 import os
 import re
+from datetime import datetime
+from pathlib import Path
+from typing import Any, List, Optional, cast
 
 from dateutil.parser import parse
 from pydantic import (
     BaseModel,
 )
 
-from .doc import Doc, Text, Point
+from ..llms.embedding_model import EmbeddingModel
+from ..llms.llm_model import LLMModel
+from ..utils.utils import gather_with_concurrency
+from .doc import Doc, Point, Text
 from .parsing_settings import ParsingSettings
 from .utils import (
     generate_dockey,
@@ -18,10 +21,6 @@ from .utils import (
     read_doc,
     summarize_chunk,
 )
-from ..llms.embedding_model import EmbeddingModel
-from ..llms.llm_model import LLMModel
-from ..utils.utils import gather_with_concurrency
-
 
 logger = logging.getLogger(__name__)
 

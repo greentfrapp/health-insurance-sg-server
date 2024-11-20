@@ -1,18 +1,12 @@
+import re
 from collections import OrderedDict
 from typing import cast
-import re
 
-from llama_index.core.callbacks import (
-    CallbackManager,
-    CBEventType,
-    EventPayload,
-)
+from llama_index.core.callbacks import CallbackManager, CBEventType, EventPayload
 from llama_index.core.tools import ToolOutput
 
 from ...tools.paperqa_tools import PaperQAToolSpec
-from ...tools.retrieve_evidence import (
-    EXAMPLE_CITATION,
-)
+from ...tools.retrieve_evidence import EXAMPLE_CITATION
 from ...utils.answer import Answer
 from ...utils.context import Context
 
@@ -35,6 +29,8 @@ def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool
         # keep first chunks
         if len(latest_content) < len("Thought"):
             missed_chunks_storage.append(chunk)
+        elif "Action:" in latest_content:
+            return False
         elif (
             not latest_content.startswith("Thought:")
             and "Thought:" not in latest_content
@@ -200,3 +196,16 @@ Action Input: the input to the tool, in a JSON format representing the kwargs (e
         event.on_end(payload={EventPayload.FUNCTION_OUTPUT: str(dummy_tool_output)})
 
     return dummy_tool_output
+
+
+def parse_action_response(response: str):
+    # action_pattern = r"Thought:((.|\s)*?)\nAction:((.|\s)*?)\nAction Input:((.|\s)*?)\n"
+    action_pattern = r"Thought:.*?\n+Action:.*?\n+Action Input:.*?\n"
+    # def remove_excess(match: re.Match):
+    #     excess = match.groupdict().get("excess", "")
+    #     return match.string[:len(match.string)-len(excess)]
+    match = re.findall(action_pattern, response)
+    if len(match):
+        return match[0]
+    else:
+        return response

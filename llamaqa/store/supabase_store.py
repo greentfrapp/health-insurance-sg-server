@@ -1,20 +1,20 @@
-from collections.abc import Iterable, Sequence
-from pydantic import Field
-from typing import Any, List, Optional
 import json
 import re
+from collections.abc import Iterable, Sequence
+from typing import Any, List, Optional
 
-from postgrest.exceptions import APIError
-from supabase._async.client import create_client as create_async_client
 import numpy as np
+from postgrest.exceptions import APIError
+from pydantic import Field
+from supabase._async.client import create_client as create_async_client
 
-from .store import VectorStore, cosine_similarity
-from .utils import upload_chunk
 from ..llms.embedding_model import EmbeddingModel
-from ..reader.doc import Doc, Text, Point
+from ..reader.doc import Doc, Point, Text
 from ..utils.embeddable import Embeddable
 from ..utils.policies import POLICY_IDS
 from ..utils.utils import gather_with_concurrency
+from .store import VectorStore, cosine_similarity
+from .utils import upload_chunk
 
 
 def response_to_text(data: List) -> List[Text]:

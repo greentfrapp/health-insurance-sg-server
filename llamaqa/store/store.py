@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
 from collections.abc import Iterable, Sequence
+from typing import Any
+
+import numpy as np
 from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
 )
-from typing import Any
-
-import numpy as np
 
 from llamaqa.reader.doc import Text
 

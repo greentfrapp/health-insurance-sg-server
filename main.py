@@ -1,19 +1,16 @@
+import logging
 from typing import List, Optional
 
-from dotenv import load_dotenv
-from pydantic import BaseModel
-import logging
 import nest_asyncio
-
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-
 from llama_index.core.base.llms.types import ChatMessage
+from pydantic import BaseModel
 
 import llamaqa
 from llamaqa.agents.paperqa.base import PaperQAAgent
-
 
 load_dotenv()
 nest_asyncio.apply()
@@ -80,12 +77,13 @@ async def main():
 
     async def test_stream_thoughts(query: str, step_by_step=False):
         response = stream_thoughts_helper(
-            agent, query, [], "AIA HealthShield Gold", step_by_step
+            agent, query, [], "AIA HealthShield Gold Max", step_by_step
         )
         async for _ in response:
             pass
 
     query = "lasik coverage for this policy"
+    # query = "Hello"
     while True:
         # await test_stream_thoughts("lasik coverage for aia gold")
         await test_stream_thoughts(query, step_by_step=True)

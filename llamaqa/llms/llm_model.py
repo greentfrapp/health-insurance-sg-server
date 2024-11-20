@@ -1,3 +1,7 @@
+import asyncio
+import contextlib
+import functools
+import logging
 from abc import ABC
 from inspect import isasyncgenfunction, signature
 from typing import (
@@ -11,10 +15,6 @@ from typing import (
     Optional,
     TypeVar,
 )
-import asyncio
-import contextlib
-import functools
-import logging
 
 from pydantic import (
     BaseModel,
@@ -24,7 +24,6 @@ from pydantic import (
 
 from ..utils.utils import is_coroutine_callable
 from .llm_result import LLMResult
-
 
 # Estimate from OpenAI's FAQ
 # https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them

@@ -1,5 +1,5 @@
-from typing import Tuple
 import re
+from typing import Tuple
 
 from llama_index.core.agent.react.output_parser import (
     action_input_parser,

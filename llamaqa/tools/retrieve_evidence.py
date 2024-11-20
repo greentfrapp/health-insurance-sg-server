@@ -1,7 +1,6 @@
 from ..store.store import VectorStore
 from ..utils.cache import Cache
 
-
 SYSTEM_PROMPT = (
     "Answer in a direct and concise tone. "
     "Your audience is an expert, so be highly specific. "

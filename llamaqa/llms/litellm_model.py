@@ -6,21 +6,20 @@ from typing import (
     cast,
 )
 
+import litellm
 from pydantic import (
     ConfigDict,
     Field,
     TypeAdapter,
     model_validator,
 )
-import litellm
 
+from ..utils.logger import CostLogger
 from .llm_model import (
     Chunk,
     LLMModel,
     rate_limited,
 )
-from ..utils.logger import CostLogger
-
 
 IS_PYTHON_BELOW_312 = version_info < (3, 12)
 if not IS_PYTHON_BELOW_312:

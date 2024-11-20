@@ -1,7 +1,8 @@
-from typing import Any, Callable, Dict, Optional
 import functools
+from typing import Any, Callable, Dict, Optional
 
 from llamaqa.llms.llm_result import LLMResult
+
 from ..reader.doc import Text
 from ..utils.context import Context
 from ..utils.utils import extract_score, strip_citations

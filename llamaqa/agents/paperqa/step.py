@@ -24,6 +24,7 @@ from llama_index.core.agent.types import (
     TaskStep,
     TaskStepOutput,
 )
+from llama_index.core.base.llms.types import ChatResponse
 from llama_index.core.callbacks import (
     CBEventType,
     EventPayload,
@@ -31,13 +32,11 @@ from llama_index.core.callbacks import (
 from llama_index.core.chat_engine.types import (
     AGENT_CHAT_RESPONSE_TYPE,
 )
-from llama_index.core.base.llms.types import ChatResponse
 from llama_index.core.instrumentation import get_dispatcher
 from llama_index.core.instrumentation.events.agent import AgentToolCallEvent
 from llama_index.core.tools import ToolOutput
 from llama_index.core.tools.types import AsyncBaseTool
 from llama_index.core.utils import print_text
-
 
 dispatcher = get_dispatcher(__name__)
 

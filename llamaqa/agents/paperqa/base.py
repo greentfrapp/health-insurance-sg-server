@@ -1,27 +1,17 @@
-from typing import (
-    Callable,
-    Optional,
-    Sequence,
-    cast,
-)
 import asyncio
 import json
 import logging
 import os
 import uuid
+from typing import Callable, Optional, Sequence, cast
 
 from litellm import completion_cost
-from litellm.exceptions import (
-    APIConnectionError,
-    ServiceUnavailableError,
-)
+from litellm.exceptions import APIConnectionError, ServiceUnavailableError
 from litellm.types.utils import ModelResponse
 from llama_index.core import PromptTemplate
 from llama_index.core.agent import AgentRunner
-from llama_index.core.agent.react import (
-    ReActAgent,
-    ReActChatFormatter,
-)
+from llama_index.core.agent.react import ReActAgent, ReActChatFormatter
+from llama_index.core.agent.react.step import add_user_step_to_reasoning
 from llama_index.core.agent.react.types import ActionReasoningStep
 from llama_index.core.base.llms.types import ChatMessage, MessageRole
 from llama_index.core.callbacks import CallbackManager
@@ -31,29 +21,24 @@ from llama_index.core.memory.types import BaseMemory
 from llama_index.core.objects.base import ObjectRetriever
 from llama_index.core.tools import BaseTool, ToolOutput
 from llama_index.llms.litellm import LiteLLM
-from llama_index.core.agent.react.step import (
-    add_user_step_to_reasoning,
-)
 
-from .fallback import FALLBACK_RESPONSE_CONTENT, FALLBACK_FINAL_RESPONSE
-from .parser import PaperQAOutputParser
-from .prompts import PAPERQA_SYSTEM_PROMPT
-from .utils import (
-    infer_stream_chunk_is_final,
-    format_response,
-    tell_llm_about_failure_in_extract_reasoning_step,
-)
-from .step import PaperQAAgentWorker
-from ...llms import (
-    LiteLLMEmbeddingModel,
-    LiteLLMModel,
-)
+from ...llms import LiteLLMEmbeddingModel, LiteLLMModel
 from ...store.supabase_store import SupabaseStore
 from ...tools.paperqa_tools import PaperQAToolSpec
 from ...utils.cache import Cache
 from ...utils.logger import CostLogger
 from ...utils.policies import VALID_POLICIES
-
+from .fallback import FALLBACK_FINAL_RESPONSE, FALLBACK_RESPONSE_CONTENT
+from .parser import PaperQAOutputParser
+from .prompts import PAPERQA_SYSTEM_PROMPT
+from .step import PaperQAAgentWorker
+from .suggest import suggest_follow_up
+from .utils import (
+    format_response,
+    infer_stream_chunk_is_final,
+    parse_action_response,
+    tell_llm_about_failure_in_extract_reasoning_step,
+)
 
 logger = logging.getLogger("paperqa-agent")
 
@@ -233,6 +218,9 @@ class PaperQAAgent(ReActAgent):
                         yield value
                         response_buffer += value
                         is_done = infer_stream_chunk_is_final(response_buffer, [])
+
+                    response_buffer = parse_action_response(response_buffer)
+
                     response_success = True
                 except (APIConnectionError, ServiceUnavailableError) as e:
                     current_retry += 1
@@ -334,6 +322,9 @@ class PaperQAAgent(ReActAgent):
         final_response = response_buffer.split("Answer:")[-1].strip()
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=final_response))
 
+        # Suggest shortcut responses
+        suggested_responses = await suggest_follow_up(self)
+
         recent_history = []
         for i, message in enumerate(
             self.memory.chat_store.to_dict()["store"]["chat_history"][::-1]
@@ -346,6 +337,9 @@ class PaperQAAgent(ReActAgent):
                         query,
                         final_response,
                         self.toolspec,
+                    )
+                    message["formattedContent"]["suggestedResponses"] = (
+                        suggested_responses
                     )
                 recent_history.insert(0, message)
             else:

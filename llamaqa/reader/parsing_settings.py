@@ -9,7 +9,6 @@ from pydantic import (
 
 from llamaqa import __version__
 
-
 CITATION_PROMPT = (
     "Provide the citation for the following text in MLA Format. "
     "Do not write an introductory sentence. "

@@ -7,7 +7,7 @@ import re
 import string
 from pathlib import Path
 from typing import ClassVar, Literal, overload
-from uuid import uuid5, UUID
+from uuid import UUID, uuid5
 
 import pypdf
 import tiktoken
@@ -17,9 +17,9 @@ from html2text import html2text
 from pydantic import BaseModel
 
 from llamaqa import __version__ as llamaqa_version
+
 from ..llms.llm_model import LLMModel
 from ..reader.doc import Doc, Text
-
 
 logger = logging.getLogger(__name__)
 

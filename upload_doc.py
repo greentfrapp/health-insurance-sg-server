@@ -6,11 +6,10 @@ import os
 from dotenv import load_dotenv
 
 from llamaqa.llms import LiteLLMEmbeddingModel, LiteLLMModel
-from llamaqa.reader.reader import Reader
 from llamaqa.reader.parsing_settings import ParsingSettings
+from llamaqa.reader.reader import Reader
 from llamaqa.store.supabase_store import SupabaseStore
 from llamaqa.utils.logger import CostLogger
-
 
 with open("./essential_policies_plus.json", "r") as file:
     POLICIES = json.load(file)

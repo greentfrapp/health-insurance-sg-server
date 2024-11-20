@@ -1,6 +1,5 @@
 from ...utils.policies import VALID_POLICIES
 
-
 PAPERQA_SYSTEM_PROMPT = f"""\
 
 You are a large language model designed to help with a variety of tasks, from answering questions \
