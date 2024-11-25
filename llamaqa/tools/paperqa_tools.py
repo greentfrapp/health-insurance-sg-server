@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import List, Optional
 
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
 
@@ -11,6 +11,7 @@ from ..utils.logger import CostLogger
 from ..utils.policies import VALID_POLICIES
 from .gather_evidence import gather_evidence
 from .retrieve_evidence import retrieve_evidence
+from .retrieve_premiums import VALID_TIERS, retrieve_premiums
 from .utils import tool_metadata
 
 
@@ -19,6 +20,7 @@ class PaperQAToolSpec(BaseToolSpec):
         "gather_evidence_by_query",
         "gather_policy_overview",
         "retrieve_evidence",
+        "retrieve_premiums",
     ]
     function_output_descriptors = {}
     store: VectorStore
@@ -133,3 +135,47 @@ Args:
             self.store,
             question,
         )
+
+    @tool_metadata(
+        desc=f"""
+Retrieve insurance premiums.
+Always use this tool when the user asks about the amount of premiums to be paid.
+
+Insurance premiums depend on age, policy, and plan selected.
+
+The plans are as follows:
+- Standard: the basic version of the policy
+- B: an enhanced version of the standard plan that covers for Class B wards in public hospitals
+- A: Similar to B but also covers for Class A wards
+- Private: Similar to A but also covers private hospitals
+
+Args:
+    ages (List[int]) = None: The ages to retrieve premiums. If None, defaults to all ages.
+    policies (List[str]) = None: A list of policies from {VALID_POLICIES} or None. If None, defaults to all policies.
+    tiers (List[str]) = None: A list of plans from {VALID_TIERS} or None. If None, defaults to all plans.
+""",
+        output_desc="Retrieving premiums based on filters age={ages}, policies={policies}, tiers={tiers}...",
+        default_kwargs={"ages": None, "policies": None, "tiers": None},
+    )
+    def retrieve_premiums(
+        self,
+        ages: Optional[List[int]] = None,
+        policies: Optional[List[str]] = None,
+        tiers: Optional[List[str]] = None,
+    ):
+        # Map policies to companies
+        policies_map = {
+            "NTUC Income IncomeShield Standard": "Income",
+            "NTUC Income Enhanced IncomeShield": "Income",
+            "AIA HealthShield Gold Max": "AIA",
+            "Great Eastern GREAT SupremeHealth": "GE",
+            "HSBC Life Shield": "HSBC",
+            "Prudential PRUShield": "Prudential",
+            "Raffles Shield": "Raffles",
+            "Singlife Shield": "Singlife",
+        }
+        companies = list(set(policies_map.get(p) for p in policies))
+        # Default ages
+        if ages == None:
+            ages = [10, 30, 50, 70]
+        return retrieve_premiums(ages, companies, tiers)

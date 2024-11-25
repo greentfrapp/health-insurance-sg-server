@@ -29,7 +29,7 @@ def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool
         # keep first chunks
         if len(latest_content) < len("Thought"):
             missed_chunks_storage.append(chunk)
-        elif "Action:" in latest_content:
+        elif "Action:" in latest_content and "Action: None" not in latest_content:
             return False
         elif (
             not latest_content.startswith("Thought:")

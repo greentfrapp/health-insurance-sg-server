@@ -75,14 +75,19 @@ async def main():
     agent = PaperQAAgent.from_config()
     agent.cost_logger.logger.setLevel(logging.INFO)
 
+    global history
+    history = []
+
     async def test_stream_thoughts(query: str, step_by_step=False):
+        global history
         response = stream_thoughts_helper(
-            agent, query, [], "AIA HealthShield Gold Max", step_by_step
+            agent, query, history, "AIA HealthShield Gold Max", step_by_step
         )
         async for _ in response:
             pass
+        history = agent.memory.chat_store.store["chat_history"]
 
-    query = "lasik coverage for this policy"
+    query = "Premium for this policy."
     # query = "Hello"
     while True:
         # await test_stream_thoughts("lasik coverage for aia gold")
