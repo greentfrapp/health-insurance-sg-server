@@ -102,7 +102,10 @@ def print_results_table(filtered_data):
 
 def main():
     # Parse the command line arguments
-    parser = argparse.ArgumentParser(description="Filter insurance premium data")
+    parser = argparse.ArgumentParser(
+        description="Filter insurance premium data",
+        epilog="Example usage:\n  python retrieve_premium.py --age 30 --company AIA --plan Private --format table",
+    )
     parser.add_argument('--age', type=str, nargs='+', choices=[str(i) for i in range(1, 101)] + ['Over 100'], help='Age (from 1 to 100, and "Over 100")')
     parser.add_argument('--company', type=str, nargs='+', choices=['Income', 'AIA', 'GE', 'HSBC', 'Prudential', 'Raffles', 'Singlife'], help='Company (Income, AIA, GE, HSBC, Prudential, Raffles, Singlife)')
     parser.add_argument('--plan', type=str, nargs='+', choices=['Private', 'A', 'B', 'Standard'], help='Plan (Private, A, B, Standard)')
