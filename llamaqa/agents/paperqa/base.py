@@ -148,7 +148,7 @@ class PaperQAAgent(ReActAgent):
             react_chat_formatter=None,
             output_parser=PaperQAOutputParser(),
             callback_manager=None,
-            verbose=True,
+            verbose=kwargs.get("verbose", True),
             context=None,
             handle_reasoning_failure_fn=tell_llm_about_failure_in_extract_reasoning_step,
             cost_logger=cost_logger,

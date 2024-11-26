@@ -1,0 +1,26 @@
+[
+  {
+    "label": "plans",
+    "setup": {
+      "current_document": "AIA HealthShield Gold Max"
+    },
+    "messages": [
+      {
+        "content": "what are the different plans in this policy",
+        "assert_response_includes": ["A", "B", "B Lite"]
+      }
+    ]
+  },
+  {
+    "label": "openended",
+    "setup": {
+      "current_document": "AIA HealthShield Gold Max"
+    },
+    "messages": [
+      {
+        "content": "lasik coverage for this policy",
+        "open_ended_eval": "Check that the response is negative because LASIK is not covered"
+      }
+    ]
+  }
+]
