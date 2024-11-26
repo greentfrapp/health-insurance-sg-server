@@ -2,6 +2,7 @@ import json
 from typing import AsyncGenerator, Optional
 
 import nest_asyncio
+
 from llamaqa.agents.paperqa.base import PaperQAAgent
 from llamaqa.llms.litellm_model import LiteLLMModel
 from llamaqa.llms.llm_model import LLMModel
@@ -76,7 +77,10 @@ class ModelGrader:
         return llm_parse_json(result.text).get("grade")
 
     async def conversational_eval(
-        self, condition: str, system_fn: AsyncGenerator, agent: PaperQAAgent = None,
+        self,
+        condition: str,
+        system_fn: AsyncGenerator,
+        agent: PaperQAAgent = None,
         verbose=False,
     ):
         messages = [
