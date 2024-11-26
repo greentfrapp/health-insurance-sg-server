@@ -2,7 +2,6 @@ import json
 from typing import AsyncGenerator, Optional
 
 import nest_asyncio
-
 from llamaqa.agents.paperqa.base import PaperQAAgent
 from llamaqa.llms.litellm_model import LiteLLMModel
 from llamaqa.llms.llm_model import LLMModel
@@ -77,7 +76,8 @@ class ModelGrader:
         return llm_parse_json(result.text).get("grade")
 
     async def conversational_eval(
-        self, condition: str, system_fn: AsyncGenerator, agent: PaperQAAgent = None
+        self, condition: str, system_fn: AsyncGenerator, agent: PaperQAAgent = None,
+        verbose=False,
     ):
         messages = [
             {
@@ -95,14 +95,15 @@ class ModelGrader:
 
         llm_result = await self.llm.achat(messages)
         grader_response = llm_result.text
+        if verbose:
+            print(f"Grader: {grader_response}")
 
         while "END CONVERSATION" not in grader_response:
             gradee_response, gradee_history = await system_fn(
                 grader_response, gradee_history, agent
             )
-            rounds += 1
-            if rounds > max_rounds:
-                break
+            if verbose:
+                print(f"Gradee: {gradee_response}")
             messages += [
                 {
                     "role": "assistant",
@@ -113,8 +114,13 @@ class ModelGrader:
                     "content": gradee_response,
                 },
             ]
+            rounds += 1
+            if rounds > max_rounds:
+                break
             llm_result = await self.llm.achat(messages)
             grader_response = llm_result.text
+            if verbose:
+                print(f"Grader: {grader_response}")
         messages += [
             {
                 "role": "assistant",

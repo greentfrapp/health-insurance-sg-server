@@ -5,7 +5,6 @@ from typing import List, Optional
 
 import nest_asyncio
 from dotenv import load_dotenv
-
 from llamaqa.agents.paperqa.base import PaperQAAgent
 
 from .model_grader import ModelGrader, system_fn
@@ -37,7 +36,7 @@ async def test_stream_thoughts(
     return final_response, history
 
 
-async def eval(test_file: str, test_labels: Optional[List[str]] = None):
+async def eval(test_file: str, test_labels: Optional[List[str]] = None, verbose=False):
     with open("eval/tests/" + test_file, "r") as file:
         tests = json.load(file)
 
@@ -46,7 +45,7 @@ async def eval(test_file: str, test_labels: Optional[List[str]] = None):
     eval_logger = logging.getLogger("eval_logger")
     eval_logger.setLevel(logging.INFO)
 
-    agent = PaperQAAgent.from_config(verbose=False)
+    agent = PaperQAAgent.from_config(verbose=verbose)
     agent.cost_logger.logger.setLevel(logging.INFO)
 
     grader = ModelGrader()
@@ -107,6 +106,7 @@ async def eval(test_file: str, test_labels: Optional[List[str]] = None):
                 open_test,
                 system_fn,
                 agent,
+                verbose=verbose,
             )
             if grade == "PASS":
                 eval_logger.info(
@@ -131,11 +131,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("test", type=str)
     parser.add_argument("--labels", nargs="+")
+    parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(eval(args.test, args.labels))
+    loop.run_until_complete(eval(args.test, args.labels, verbose=args.verbose))
 
 
 if __name__ == "__main__":
