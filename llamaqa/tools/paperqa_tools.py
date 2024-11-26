@@ -11,7 +11,7 @@ from ..utils.logger import CostLogger
 from ..utils.policies import VALID_POLICIES
 from .gather_evidence import gather_evidence
 from .retrieve_evidence import retrieve_evidence
-from .retrieve_premiums import VALID_TIERS, retrieve_premiums
+from .retrieve_premiums import VALID_PLANS, VALID_TIERS, retrieve_premiums
 from .utils import tool_metadata
 
 
@@ -141,26 +141,28 @@ Args:
 Retrieve insurance premiums.
 Always use this tool when the user asks about the amount of premiums to be paid.
 
-Insurance premiums depend on age, policy, and plan selected.
+Insurance premiums depend on age, policy, and plan (or tier) selected.
 
-The plans are as follows:
+The tier can be one of:
 - Standard: the basic version of the policy
-- B: an enhanced version of the standard plan that covers for Class B wards in public hospitals
-- A: Similar to B but also covers for Class A wards
-- Private: Similar to A but also covers private hospitals
+- B: enhanced policy that covers up to Class B1 wards in public hospitals
+- A: similar to WardB1 but also covers Class A wards in public hospitals
+- Private: similar to WardA but also covers private hospitals
 
 Args:
-    ages (List[int]) = None: The ages to retrieve premiums. If None, defaults to all ages.
-    policies (List[str]) = None: A list of policies from {VALID_POLICIES} or None. If None, defaults to all policies.
-    tiers (List[str]) = None: A list of plans from {VALID_TIERS} or None. If None, defaults to all plans.
+    ages (List[int]) = None: The ages to retrieve premiums. If None, defaults to [10, 30, 50, 70].
+    policies (List[str]) = None: A list of policies from {VALID_POLICIES} or None. If None, defaults to all.
+    plans (List[str]) = None: A list of plans from {VALID_PLANS} or None. If None, defaults to all.
+    tiers (List[str]) = None: A list of plan tiers from {VALID_TIERS} or None. Ignored if plans are provided. If None, defaults to all.
 """,
-        output_desc="Retrieving premiums based on filters age={ages}, policies={policies}, tiers={tiers}...",
-        default_kwargs={"ages": None, "policies": None, "tiers": None},
+        output_desc="Retrieving premiums based on filters age={ages}, policies={policies}, plans={plans}, tiers={tiers}...",
+        default_kwargs={"ages": None, "policies": None, "plans": None, "tiers": None},
     )
     def retrieve_premiums(
         self,
         ages: Optional[List[int]] = None,
         policies: Optional[List[str]] = None,
+        plans: Optional[List[str]] = None,
         tiers: Optional[List[str]] = None,
     ):
         # Map policies to companies
@@ -178,4 +180,4 @@ Args:
         # Default ages
         if ages == None:
             ages = [10, 30, 50, 70]
-        return retrieve_premiums(ages, companies, tiers)
+        return retrieve_premiums(ages, companies, plans, tiers)
