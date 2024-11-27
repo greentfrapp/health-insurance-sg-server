@@ -87,7 +87,7 @@ async def main():
             pass
         history = agent.memory.chat_store.store["chat_history"]
 
-    query = "lasik coverage for this policy"
+    query = "Premium for this policy."
     # query = "Hello"
     while True:
         # await test_stream_thoughts("lasik coverage for aia gold")
