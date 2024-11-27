@@ -86,6 +86,7 @@ async def main():
         async for _ in response:
             pass
         history = agent.memory.chat_store.store["chat_history"]
+        print(history[-1].content)
 
     query = "Premium for this policy."
     # query = "Hello"
