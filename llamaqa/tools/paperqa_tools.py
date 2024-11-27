@@ -140,6 +140,7 @@ Args:
         desc=f"""
 Retrieve insurance premiums.
 Always use this tool when the user asks about the amount of premiums to be paid.
+When this tool is used, always reply the user with the table returned by this tool without modification.
 
 This tool will show the premiums payable, divided into two components.
 - MediShield Life Premiums (which are fully payable by Medisave)
@@ -150,7 +151,7 @@ Insurance premiums depend on age, policy, and plan or coverage selected.
 The coverage can be one of:
 - Standard: the basic version of the policy
 - B: enhanced policy that covers up to Class B1 wards in public hospitals
-- A: similar to B but also covers Class A wards in public hospitals
+- A: similar to B but covers up to Class A wards in public hospitals
 - Private: similar to A but also covers private hospitals
 
 Args:
@@ -184,4 +185,12 @@ Args:
         # Default ages
         if ages is None:
             ages = [10, 30, 50, 70]
-        return retrieve_premiums(ages, companies, plans, coverages)
+        data = retrieve_premiums(ages, companies, plans, coverages, format="table")
+        return f"""
+{data}
+
+Return this in markdown format to the user without modification.
+
+Important: Note that any "Class" in the plan name may not correspond to the ward coverage "Class".
+For example, a Class A plan might only provide coverage for Class B1 wards.
+"""
