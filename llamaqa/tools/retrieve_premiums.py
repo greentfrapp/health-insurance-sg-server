@@ -2,38 +2,41 @@ from typing import List, Optional
 
 from dirtyjson.attributed_containers import AttributedList
 
-from .premiums_data import PREMIUMS_DATA
 from .insurance_plans import INSURANCE_PLANS
+from .premiums_data import PREMIUMS_DATA
 
 VALID_COMPANIES = ["Income", "AIA", "GE", "HSBC", "Prudential", "Raffles", "Singlife"]
 VALID_COVERAGE = ["Standard", "Class A", "Class B1", "Private"]
-VALID_PLANS = ["MediShield Life",
- "Enchanced IncomeShield Preferred",
- "Enchanced IncomeShield Basic Advantage",
- "Enchanced IncomeShield Basic",
- "IncomeShield Standard Plan",
- "AIA HealthShield Gold Max A",
- "AIA HealthShield Gold Max B",
- "AIA HealthShield Gold Max B Lite",
- "AIA HealthShield Gold Standard Plan",
- "GREAT SupremeHealth P Plus",
- "GREAT SupremeHealth A Plus",
- "GREAT SupremeHealth B Plus",
- "GREAT SupremeHealth Standard Plan",
- "HSBC Life Shield Plan A",
- "HSBC Life Shield Plan B",
- "HSBC Life Shield Standard Plan",
- "PRUShield Premier",
- "PRUShield Plus",
- "PRUShield Standard Plan",
- "Raffles Shield Private",
- "Raffles Shield A",
- "Raffles Shield B",
- "Raffles Shield Standard",
- "Singlife Shield Plan 1",
- "Singlife Shield Plan 2",
- "Singlife Shield Plan 3",
- "Singlife Shield Standard Plan"]
+VALID_PLANS = [
+    "MediShield Life",
+    "Enchanced IncomeShield Preferred",
+    "Enchanced IncomeShield Basic Advantage",
+    "Enchanced IncomeShield Basic",
+    "IncomeShield Standard Plan",
+    "AIA HealthShield Gold Max A",
+    "AIA HealthShield Gold Max B",
+    "AIA HealthShield Gold Max B Lite",
+    "AIA HealthShield Gold Standard Plan",
+    "GREAT SupremeHealth P Plus",
+    "GREAT SupremeHealth A Plus",
+    "GREAT SupremeHealth B Plus",
+    "GREAT SupremeHealth Standard Plan",
+    "HSBC Life Shield Plan A",
+    "HSBC Life Shield Plan B",
+    "HSBC Life Shield Standard Plan",
+    "PRUShield Premier",
+    "PRUShield Plus",
+    "PRUShield Standard Plan",
+    "Raffles Shield Private",
+    "Raffles Shield A",
+    "Raffles Shield B",
+    "Raffles Shield Standard",
+    "Singlife Shield Plan 1",
+    "Singlife Shield Plan 2",
+    "Singlife Shield Plan 3",
+    "Singlife Shield Standard Plan",
+]
+
 
 # Filter the data based on the given arguments
 def retrieve_premiums(
@@ -47,8 +50,13 @@ def retrieve_premiums(
     print(age, company, plan, coverage)
 
     # Check input types
-    for arg, inp in {"age": age, "company": company, "plan": plan, "coverage": coverage}.items():
-        if inp and type(inp) != list and type(inp) != AttributedList:
+    for arg, inp in {
+        "age": age,
+        "company": company,
+        "plan": plan,
+        "coverage": coverage,
+    }.items():
+        if inp and not isinstance(inp, list) and not isinstance(inp, AttributedList):
             raise ValueError(f"{arg} is {type(inp)}, should be {list}")
 
     filtered_data = {}
@@ -60,11 +68,13 @@ def retrieve_premiums(
         # If age is specified, filter for those ages
         if age and age_key not in age:
             continue
-        
+
         if age_key not in filtered_data:
             filtered_data[age_key] = {
                 "medishield_premium": age_data.get("medishield_premium", "N/A"),
-                "additional_withdrawal_limit": age_data.get("additional_withdrawal_limit", "N/A"),
+                "additional_withdrawal_limit": age_data.get(
+                    "additional_withdrawal_limit", "N/A"
+                ),
                 "companies": {},
             }
 
@@ -81,13 +91,17 @@ def retrieve_premiums(
 
             plans_data = {}
             # If plan is specified, filter for those plans
-            if plan:  
+            if plan:
                 # Find the respective company and coverage in INSURANCE_PLANS
                 for plan_key in plan:
                     if plan_key not in INSURANCE_PLANS.get(company_key, {}).values():
                         continue
                     try:
-                        coverage = next(coverage for coverage, name in INSURANCE_PLANS[company_key].items() if name == plan_key)
+                        coverage = next(
+                            coverage
+                            for coverage, name in INSURANCE_PLANS[company_key].items()
+                            if name == plan_key
+                        )
                         plans_data[coverage] = company_data.get(coverage)
                     except StopIteration:
                         # If the plan is not found, skip this company
@@ -101,7 +115,7 @@ def retrieve_premiums(
 
             # If neither plan nor coverage is speciified, include all plans under the company
             else:
-                plans_data = company_data 
+                plans_data = company_data
 
             if company_key not in filtered_data[age_key]["companies"] and plans_data:
                 filtered_data[age_key]["companies"][company_key] = {}
@@ -111,12 +125,16 @@ def retrieve_premiums(
                     difference = float(
                         coverage_data.get("additional_insurance_premium", 0)
                     ) - float(age_data.get("additional_withdrawal_limit", 0))
-                    coverage_data["cash_outlay"] = difference if difference >= 0 else "None"
+                    coverage_data["cash_outlay"] = (
+                        difference if difference >= 0 else "None"
+                    )
                 else:
                     coverage_data["cash_outlay"] = "Not available"
 
                 # Add the selected plans data (all plans if 'plan' is not specified) to the filtered data dictionary
-                filtered_data[age_key]["companies"][company_key][coverage_key] = coverage_data
+                filtered_data[age_key]["companies"][company_key][coverage_key] = (
+                    coverage_data
+                )
 
     return prettify_results(filtered_data)
 
@@ -137,7 +155,9 @@ def prettify_results(filtered_data):
                 f"  MediShield Life Premiums (Fully payable by Medisave): {format_currency(age_data['medishield_premium'])}\n"
             )
         return message
-    elif not filtered_data or not any(filtered_data[age_key]["companies"] for age_key in filtered_data):
+    elif not filtered_data or not any(
+        filtered_data[age_key]["companies"] for age_key in filtered_data
+    ):
         return "No premium data found for the given query."
     else:
         message = ""
@@ -165,7 +185,10 @@ def main():
     # retrieve_premiums(age=None, company="foo")
     print(
         retrieve_premiums(
-            age=[32], company=["AIA"], plan=["AIA HealthShield Gold Max B"], coverage=["Standard"]
+            age=[32],
+            company=["AIA"],
+            plan=["AIA HealthShield Gold Max B"],
+            coverage=["Standard"],
         )
     )
 

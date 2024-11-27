@@ -178,6 +178,6 @@ Args:
         }
         companies = list(set(policies_map.get(p) for p in policies))
         # Default ages
-        if ages == None:
+        if ages is None:
             ages = [10, 30, 50, 70]
         return retrieve_premiums(ages, companies, plans, tiers)
