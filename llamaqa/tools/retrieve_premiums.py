@@ -1,5 +1,6 @@
-from typing import List, Optional
+from typing import Dict, List, Optional
 
+import pandas as pd
 from dirtyjson.attributed_containers import AttributedList
 
 from .insurance_plans import INSURANCE_PLANS
@@ -44,10 +45,9 @@ def retrieve_premiums(
     company: Optional[List[str]] = None,
     plan: Optional[List[str]] = None,
     coverage: Optional[List[str]] = None,
+    format: str = "list",
 ):
     data = PREMIUMS_DATA
-
-    print(age, company, plan, coverage)
 
     # Check input types
     for arg, inp in {
@@ -58,6 +58,8 @@ def retrieve_premiums(
     }.items():
         if inp and not isinstance(inp, list) and not isinstance(inp, AttributedList):
             raise ValueError(f"{arg} is {type(inp)}, should be {list}")
+    if format not in ["list", "table"]:
+        raise ValueError(f"format={format} - should be one of ['list', 'table']")
 
     filtered_data = {}
 
@@ -136,7 +138,10 @@ def retrieve_premiums(
                     coverage_data
                 )
 
-    return prettify_results(filtered_data)
+    if format == "table":
+        return prettify_results_to_table(filtered_data)
+    else:
+        return prettify_results_to_list(filtered_data)
 
 
 # Helper function to format currency as Singapore Dollars
@@ -146,7 +151,7 @@ def format_currency(value):
     return value
 
 
-def prettify_results(filtered_data):
+def prettify_results_to_list(filtered_data: Dict):
     if not all("companies" in filtered_data[age_key] for age_key in filtered_data):
         message = ""
         for age, age_data in filtered_data.items():
@@ -178,6 +183,29 @@ def prettify_results(filtered_data):
                         f"      Cash Outlay: {format_currency(coverage_data['cash_outlay'])}\n"
                     )
         return message
+
+
+def prettify_results_to_table(filtered_data: Dict):
+    rows = []
+    for age, age_data in filtered_data.items():
+        row = {
+            "Age Next Birthday": age,
+            "MediShield Premium": format_currency(age_data["medishield_premium"]),
+            "Additional Withdrawal Limits": format_currency(
+                age_data["additional_withdrawal_limit"]
+            ),
+        }
+        for company, company_data in age_data["companies"].items():
+            for plan, plan_data in company_data.items():
+                row[f"{company} - {plan} - Additional Insurance Premium"] = (
+                    format_currency(plan_data["additional_insurance_premium"])
+                )
+                row[f"{company} - {plan} - Cash Outlay"] = format_currency(
+                    plan_data["cash_outlay"]
+                )
+        rows.append(row)
+
+    return pd.DataFrame(rows).to_markdown(index=False)
 
 
 def main():
