@@ -36,6 +36,7 @@ requires-python = ">=3.11"
 [project.scripts]
 pqa = "paperqa.agents:main"
 eval = "eval.eval:main"
+serve = "server.server:start"
 
 [tool.uv]
 dev-dependencies = [
@@ -55,4 +56,5 @@ unfixable = ["B"]
 include = [
     "llamaqa",
     "eval",
+    "server",
 ]

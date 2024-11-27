@@ -88,7 +88,7 @@ async def main():
         history = agent.memory.chat_store.store["chat_history"]
         print(history[-1].content)
 
-    query = "Premium for this policy."
+    query = "Premium for this policy for coverage of up to class B1 wards. I am 32 years old."
     # query = "Hello"
     while True:
         # await test_stream_thoughts("lasik coverage for aia gold")
@@ -100,7 +100,7 @@ async def main():
         # await test_stream_thoughts("Tell me about prosthetic coverage for ntuc income. Give your answer in point form")
         # await test_stream_thoughts("do the same for aia")
         query = input("Reply: ")
-        if query == "q":
+        if not query or query == "q":
             break
     agent.pprint_memory()
     print("Total cost: ", agent.cost_logger.total_cost)
