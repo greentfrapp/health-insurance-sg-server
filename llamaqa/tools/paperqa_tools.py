@@ -141,13 +141,17 @@ Args:
 Retrieve insurance premiums.
 Always use this tool when the user asks about the amount of premiums to be paid.
 
+This tool will show the premiums payable, divided into two components.
+- MediShield Life Premiums (which are fully payable by Medisave)
+- Additional Insurance Premium (which is the additional premium payable by the user)
+
 Insurance premiums depend on age, policy, and plan (or tier) selected.
 
 The tier can be one of:
 - Standard: the basic version of the policy
 - B: enhanced policy that covers up to Class B1 wards in public hospitals
-- A: similar to WardB1 but also covers Class A wards in public hospitals
-- Private: similar to WardA but also covers private hospitals
+- A: similar to B but also covers Class A wards in public hospitals
+- Private: similar to A but also covers private hospitals
 
 Args:
     ages (List[int]) = None: The ages to retrieve premiums. If None, defaults to [10, 30, 50, 70].
