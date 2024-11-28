@@ -179,7 +179,7 @@ Args:
             "NTUC Income IncomeShield Standard": "Income",
             "NTUC Income Enhanced IncomeShield": "Income",
             "AIA HealthShield Gold Max": "AIA",
-            "Great Eastern GREAT SupremeHealth": "GE",
+            "Great Eastern GREAT SupremeHealth": "Great Eastern",
             "HSBC Life Shield": "HSBC",
             "Prudential PRUShield": "Prudential",
             "Raffles Shield": "Raffles",
