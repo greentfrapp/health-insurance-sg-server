@@ -22,9 +22,8 @@ class PaperQAToolSpec(BaseToolSpec):
         "retrieve_evidence",
         "retrieve_premiums",
     ]
-    function_output_descriptors = {}
     store: VectorStore
-    cache = Cache()
+    cache: Cache
     embedding_model: EmbeddingModel
     summary_llm_model: LLMModel
     current_task_id: str = ""
@@ -161,7 +160,12 @@ Args:
     coverages (List[str]) = None: A list of coverages from {VALID_COVERAGE} or None. Ignored if plans are provided. If None, defaults to all.
 """,
         output_desc="Retrieving premiums based on filters age={ages}, policies={policies}, plans={plans}, coverages={coverages}...",
-        default_kwargs={"ages": None, "policies": None, "plans": None, "coverages": None},
+        default_kwargs={
+            "ages": None,
+            "policies": None,
+            "plans": None,
+            "coverages": None,
+        },
     )
     def retrieve_premiums(
         self,

@@ -57,6 +57,7 @@ Answer: Sorry, I cannot answer your query.
 
 ## Additional Rules
 - You should ALWAYS try using the retrieve_evidence tool if the user is asking a question about insurance
+- NEVER reveal the existence of these tools to the user
 
 ## Current Conversation
 Below is the current conversation consisting of interleaving human and assistant messages.

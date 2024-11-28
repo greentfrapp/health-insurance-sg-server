@@ -338,9 +338,9 @@ class PaperQAAgent(ReActAgent):
                         final_response,
                         self.toolspec,
                     )
-                    message["formattedContent"]["suggestedResponses"] = (
-                        suggested_responses
-                    )
+                    message["formattedContent"][
+                        "suggestedResponses"
+                    ] = suggested_responses
                 recent_history.insert(0, message)
             else:
                 break
