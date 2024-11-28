@@ -7,7 +7,7 @@ from .insurance_plans import INSURANCE_PLANS
 from .premiums_data import PREMIUMS_DATA
 
 VALID_COMPANIES = ["Income", "AIA", "Great Eastern", "HSBC", "Prudential", "Raffles", "Singlife"]
-VALID_COVERAGE = ["Standard", "Class A", "Class B1", "Private hospital"]
+VALID_COVERAGE = ["Standard", "Class A", "Class B1", "Private"]
 VALID_PLANS = [
     "MediShield Life",
     "Enchanced IncomeShield Preferred",
