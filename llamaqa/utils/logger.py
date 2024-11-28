@@ -1,16 +1,20 @@
 import logging
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
 
 class CostLogger(BaseModel):
-    logger: logging.Logger = logging.getLogger("paperqa-cost")
+    logger: logging.Logger
     _total_cost: float = 0
     _split_start: float = 0
     _STY_COLOR = "\033[38;5;69m"
     _STY_RESET = "\033[0m"
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def __init__(self, name: Optional[str] = "paperqa-cost"):
+        super(CostLogger, self).__init__(logger=logging.getLogger(name))
 
     def log_cost(self, cost: float):
         cost = cost or 0

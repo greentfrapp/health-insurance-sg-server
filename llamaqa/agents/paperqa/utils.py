@@ -1,8 +1,9 @@
 import re
 from collections import OrderedDict
-from typing import cast
+from typing import List, Optional, cast
 
-from llama_index.core.callbacks import CallbackManager, CBEventType, EventPayload
+from llama_index.core.callbacks import (CallbackManager, CBEventType,
+                                        EventPayload)
 from llama_index.core.tools import ToolOutput
 
 from ...tools.paperqa_tools import PaperQAToolSpec
@@ -29,7 +30,7 @@ def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool
         # keep first chunks
         if len(latest_content) < len("Thought"):
             missed_chunks_storage.append(chunk)
-        elif "Action:" in latest_content:
+        elif "Action:" in latest_content and "Action: None" not in latest_content:
             return False
         elif (
             not latest_content.startswith("Thought:")
@@ -52,7 +53,7 @@ def name_pos_in_text(name: str, text: str) -> int:
         return -1
 
 
-def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
+def format_response(query: str, response: str, toolspec: PaperQAToolSpec, prev_document_ids: Optional[List[str]] = None):
     answer_text = response
     # Format references
     bib_positions = []
@@ -88,7 +89,7 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
     )
 
     # Convert citations into <cite> tags
-    docnames = set(b.text.doc.docname for b in response.bib.values())
+    docnames = set([b.text.doc.docname for b in response.bib.values()] + prev_document_ids)
     docnames_str = "|".join(docnames)
     text_names = set(response.bib.keys())
     citation_group_pattern = re.compile(
@@ -107,7 +108,7 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
     def replace_individual_citations(match: re.Match):
         quotes_text = match.groupdict()["quotes"]
         text_name = match.groupdict()["citation"].strip()
-        if text_name not in text_names:
+        if text_name.split()[0] not in prev_document_ids and text_name not in text_names:
             return ""
         if quotes_text:
             return re.sub(
@@ -140,6 +141,8 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec):
     references = []
     for r in references_list:
         docname = r.split(" quote")[0]
+        if docname.split()[0] in prev_document_ids:
+            continue
         context = cast(Context, response.bib[docname])
         quote = None
         if " quote" in r:

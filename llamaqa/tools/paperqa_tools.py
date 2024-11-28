@@ -1,5 +1,5 @@
 import asyncio
-from typing import Optional
+from typing import List, Optional
 
 from llama_index.core.tools.tool_spec.base import BaseToolSpec
 
@@ -11,6 +11,7 @@ from ..utils.logger import CostLogger
 from ..utils.policies import VALID_POLICIES
 from .gather_evidence import gather_evidence
 from .retrieve_evidence import retrieve_evidence
+from .retrieve_premiums import VALID_COVERAGE, VALID_PLANS, retrieve_premiums
 from .utils import tool_metadata
 
 
@@ -19,10 +20,10 @@ class PaperQAToolSpec(BaseToolSpec):
         "gather_evidence_by_query",
         "gather_policy_overview",
         "retrieve_evidence",
+        "retrieve_premiums",
     ]
-    function_output_descriptors = {}
     store: VectorStore
-    cache = Cache()
+    cache: Cache
     embedding_model: EmbeddingModel
     summary_llm_model: LLMModel
     current_task_id: str = ""
@@ -133,3 +134,67 @@ Args:
             self.store,
             question,
         )
+
+    @tool_metadata(
+        desc=f"""
+Retrieve insurance premiums.
+Always use this tool when the user asks about the amount of premiums to be paid.
+When this tool is used, always reply the user with the table returned by this tool without modification.
+
+This tool will show the premiums payable, divided into two components.
+- MediShield Life Premiums (which are fully payable by Medisave)
+- Additional Insurance Premium (which is the additional premium payable by the user)
+
+Insurance premiums depend on age, policy, and plan or coverage selected.
+
+The coverage can be one of:
+- Standard: the basic version of the policy
+- B: enhanced policy that covers up to Class B1 wards in public hospitals
+- A: similar to B but covers up to Class A wards in public hospitals
+- Private: similar to A but also covers private hospitals
+
+Args:
+    ages (List[int]) = None: The ages to retrieve premiums. If None, defaults to [10, 30, 50, 70].
+    policies (List[str]) = None: A list of policies from {VALID_POLICIES} or None. If None, defaults to all.
+    plans (List[str]) = None: A list of plans from {VALID_PLANS} or None. If None, defaults to all.
+    coverages (List[str]) = None: A list of coverages from {VALID_COVERAGE} or None. Ignored if plans are provided. If None, defaults to all.
+""",
+        output_desc="Retrieving premiums based on filters age={ages}, policies={policies}, plans={plans}, coverages={coverages}...",
+        default_kwargs={
+            "ages": None,
+            "policies": None,
+            "plans": None,
+            "coverages": None,
+        },
+    )
+    def retrieve_premiums(
+        self,
+        ages: Optional[List[int]] = None,
+        policies: Optional[List[str]] = None,
+        plans: Optional[List[str]] = None,
+        coverages: Optional[List[str]] = None,
+    ):
+        # Map policies to companies
+        policies_map = {
+            "NTUC Income IncomeShield Standard": "Income",
+            "NTUC Income Enhanced IncomeShield": "Income",
+            "AIA HealthShield Gold Max": "AIA",
+            "Great Eastern GREAT SupremeHealth": "GE",
+            "HSBC Life Shield": "HSBC",
+            "Prudential PRUShield": "Prudential",
+            "Raffles Shield": "Raffles",
+            "Singlife Shield": "Singlife",
+        }
+        companies = list(set(policies_map.get(p) for p in policies))
+        # Default ages
+        if ages is None:
+            ages = [10, 30, 50, 70]
+        data = retrieve_premiums(ages, companies, plans, coverages, format="table")
+        return f"""
+{data}
+
+Return this in markdown format to the user without modification.
+
+Important: Note that any "Class" in the plan name may not correspond to the ward coverage "Class".
+For example, a Class A plan might only provide coverage for Class B1 wards.
+"""

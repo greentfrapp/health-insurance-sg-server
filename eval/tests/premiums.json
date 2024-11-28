@@ -1,0 +1,17 @@
+[
+  {
+    "setup": {
+      "current_document": "AIA HealthShield Gold Max"
+    },
+    "messages": [
+      {
+        "content": "premiums for a plan in this policy that covers private hospitals. I'm 30 years old.",
+        "assert_response_includes": ["362"]
+      }
+    ]
+  },
+  {
+    "label": "convo",
+    "test": "You are a 40 year old who wants to know how much are the premiums for a Great Eastern health insurance plan that will cover up to Class A wards. Wait to be asked what your age is. The correct response is an additional premium of $137.53 on top of what is payable by MediSave."
+  }
+]
