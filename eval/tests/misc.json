@@ -1,0 +1,22 @@
+[
+  {
+    "label": "lasik-1",
+    "setup": {
+      "current_document": "AIA HealthShield Gold Max"
+    },
+    "messages": [
+      {
+        "content": "lasik coverage for this policy",
+        "open_ended_eval": "Check that the response is negative because LASIK is not covered. Grade as PASS or FAIL."
+      }
+    ]
+  },
+  {
+    "label": "lasik-2",
+    "test": "Ask about lasik coverage under the AIA HealthShield Gold Max policy and check that the response is negative. Do not explicitly ask about AIA HealthShield first. Wait to be asked which policy you are interested in. Grade as PASS or FAIL."
+  },
+  {
+    "label": "table-1",
+    "test": "Ask about prosthetics coverage under Raffles Shield and Singlife Shield. Then ask to compare the two in a table form. You should receive a markdown table in response. Grade as PASS or FAIL."
+  }
+]

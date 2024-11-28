@@ -1,11 +1,11 @@
 import json
 import logging
 import re
+from pathlib import Path
 from typing import List, Optional
 
 import nest_asyncio
 from dotenv import load_dotenv
-
 from llamaqa.agents.paperqa.base import PaperQAAgent
 
 from .model_grader import ModelGrader, system_fn
@@ -37,9 +37,15 @@ async def test_stream_thoughts(
     return final_response, history
 
 
-async def eval(test_file: str, test_labels: Optional[List[str]] = None, verbose=False):
-    with open("eval/tests/" + test_file, "r") as file:
-        tests = json.load(file)
+async def eval(test_file: Optional[str] = None, test_labels: Optional[List[str]] = None, verbose=False):
+    if test_file is None:
+        tests = []
+        for file_path in Path("eval/tests/").glob("*.json"):
+            with open(file_path, "r") as file:
+                tests += json.load(file)
+    else:
+        with open("eval/tests/" + test_file, "r") as file:
+            tests = json.load(file)
 
     logging.basicConfig()
 
@@ -102,6 +108,8 @@ async def eval(test_file: str, test_labels: Optional[List[str]] = None, verbose=
                         eval_logger.info(
                             f"{_STY_SCORE_COLOR}Grade={grade}: {open_ended_eval}{_STY_RESET}"
                         )
+            if verbose:
+                agent.pprint_memory()
         elif open_test:
             grade, messages = await grader.conversational_eval(
                 open_test,
@@ -130,14 +138,21 @@ def main():
     import asyncio
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("test", type=str)
+    parser.add_argument("--test", type=str)
     parser.add_argument("--labels", nargs="+")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument("--all", action="store_true")
     args = parser.parse_args()
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    loop.run_until_complete(eval(args.test, args.labels, verbose=args.verbose))
+    loop.run_until_complete(
+        eval(
+            test_file=None if args.all else args.test,
+            test_labels=args.labels,
+            verbose=args.verbose,
+        )
+    )
 
 
 if __name__ == "__main__":

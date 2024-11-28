@@ -12,6 +12,6 @@
   },
   {
     "label": "convo",
-    "test": "You are a 40 year old who wants to know how much are the premiums for a Great Eastern health insurance plan that will cover up to Class A wards. Wait to be asked what your age is. The correct response is an additional premium of $137.53 on top of what is payable by MediSave."
+    "test": "You are a 40 year old who wants to know how much are the premiums for a Great Eastern health insurance plan that will cover up to Class A wards. Wait to be asked what your age is. The correct response is an additional premium of $137.53 on top of what is covered under MediShield. Also ask if you have to pay out of pocket for this additional premium. It should be covered by MediSave. Grade as PASS or FAIL."
   }
 ]
