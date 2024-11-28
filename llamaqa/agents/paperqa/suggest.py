@@ -17,27 +17,33 @@ ALTERNATIVE_POLICY_QUESTIONS = [
 
 
 SUGGEST_FOLLOW_UP_PROMPT = f"""
-Suggest up to 2 follow-up responses that the user can respond with.
+Suggest 0 to 2 follow-up responses that can be presented to the user.
+These responses are potential replies that the user can pose to you.
 
-Only choose from the following options:
+Choose from the following options:
 - A general relevant question no more than 10 words
-- "Format your response as a table"
-- "Simplify your response"
 - "How does this compare to <another policy>"
+- "Format your response as a table" # Use this if your prior response involves comparisons or lists
+- "Simplify your response" # Use this if your prior response might be too verbose
 
 Where <another policy> is one of:
 {VALID_POLICIES}
 
 Do not suggest responses similar to the user's last 5 responses.
 
-Format your answer as a JSON array like this:
+Only suggest relevant responses.
+If no follow-up responses are appropriate, simply return an empty list.
 
+Format your answer like this:
+
+Thought: <thought process>
+
+```json
 [
     "<suggestion 1>",
     ...
 ]
-
-If no follow-up responses are appropriate, return an empty list like this: []
+```
 """
 
 
