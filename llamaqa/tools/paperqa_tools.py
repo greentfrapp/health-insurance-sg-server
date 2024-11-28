@@ -185,10 +185,10 @@ Args:
             "Raffles Shield": "Raffles",
             "Singlife Shield": "Singlife",
         }
+        policies = policies or []
         companies = list(set(policies_map.get(p) for p in policies))
         # Default ages
-        if ages is None:
-            ages = [10, 30, 50, 70]
+        ages = ages or [10, 30, 50, 70]
         data = retrieve_premiums(ages, companies, plans, coverages, format="table")
         return f"""
 {data}
