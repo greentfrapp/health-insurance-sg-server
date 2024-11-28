@@ -23,7 +23,7 @@ These responses are potential replies that the user can pose to you.
 Choose from the following options:
 - A general relevant question no more than 10 words
 - "How does this compare to <another policy>"
-- "Format your response as a table" # Use this if your prior response can be expressed as a table
+- "Format your response as a table" # Use this if your prior response involves comparisons or lists
 - "Simplify your response" # Use this if your prior response might be too verbose
 
 Where <another policy> is one of:
