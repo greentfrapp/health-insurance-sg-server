@@ -168,7 +168,7 @@ def prettify_results_to_list(filtered_data: Dict):
         for age, age_data in filtered_data.items():
             message += (
                 f"Age: {age}\n"
-                f"  MediShield Life Premiums (Fully payable by Medisave): {format_currency(age_data['medishield_premium'])}\n"
+                f"  MediShield Life premium (Fully payable by Medisave): {format_currency(age_data['medishield_premium'])}\n"
             )
         message += "\nAge refers to your age on your next birthday because the insurance will cover your risk for the year ahead."
         return message
@@ -209,7 +209,7 @@ def prettify_results_to_table(filtered_data: Dict):
                         "MediShield Life premium (Fully payable with MediSave)": format_currency(age_data["medishield_premium"]),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
                             f"Total: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
-                            f"  Payable with MediSave: Up to {format_currency(age_data['additional_withdrawal_limit'])}<br>"
+                            f"  Payable with MediSave: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
                             f"  Cash payment required: {format_currency(coverage_data['cash_outlay'])}"
                         )
                     }
@@ -230,7 +230,7 @@ def prettify_results_to_table(filtered_data: Dict):
                         "MediShield Life premium (Fully payable by Medisave)": format_currency(age_data["medishield_premium"]),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
                             f"Total: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
-                            f"  Payable with MediSave: Up to {format_currency(age_data['additional_withdrawal_limit'])}<br>"
+                            f"  Payable with MediSave: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
                             f"  Cash payment required: {format_currency(coverage_data['cash_outlay'])}"
                         )
                     }
@@ -240,7 +240,7 @@ def prettify_results_to_table(filtered_data: Dict):
                 table = pd.DataFrame(rows).to_markdown(index=False)
                 table_results += f"{age_title}{table}\n\n"
 
-    age_note = "\n\nNote: Age refers to your age on your next birthday because the insurance will cover your risk for the year ahead."
+    age_note = "\nNote: Age refers to your age on your next birthday because the insurance will cover your risk for the year ahead."
 
     return table_results + age_note
 
@@ -250,11 +250,11 @@ def main():
     # retrieve_premiums(age=None, company="foo")
     print(
         retrieve_premiums(
-            age=[30],
+            age=[18, 30, 99],
             company=["AIA"],
-            plan=["AIA HealthShield Gold Max A"],
+            plan=["AIA HealthShield Gold Max A", "IncomeShield Standard Plan"],
             coverage=["Standard"],
-            format = "list"
+            format = "table"
         )
     )
 
