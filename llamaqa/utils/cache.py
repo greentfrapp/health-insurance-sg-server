@@ -13,10 +13,9 @@ CONTEXT_INNER_PROMPT_WITH_QUOTE = "{name}:\n{text}{quotes}\nFrom {citation}"
 class Cache:
     summaries: List[Context]
     max_sources: int = 10
-    
+
     def __init__(self):
         self.summaries = []
-
 
     def filtered_contexts(self, max_sources: Optional[int] = None):
         # remove any contexts with a score of 0
