@@ -2,8 +2,7 @@ import re
 from collections import OrderedDict
 from typing import List, Optional, cast
 
-from llama_index.core.callbacks import (CallbackManager, CBEventType,
-                                        EventPayload)
+from llama_index.core.callbacks import CallbackManager, CBEventType, EventPayload
 from llama_index.core.tools import ToolOutput
 
 from ...tools.paperqa_tools import PaperQAToolSpec
@@ -53,7 +52,12 @@ def name_pos_in_text(name: str, text: str) -> int:
         return -1
 
 
-def format_response(query: str, response: str, toolspec: PaperQAToolSpec, prev_document_ids: Optional[List[str]] = None):
+def format_response(
+    query: str,
+    response: str,
+    toolspec: PaperQAToolSpec,
+    prev_document_ids: Optional[List[str]] = None,
+):
     answer_text = response
     # Format references
     bib_positions = []
@@ -89,7 +93,9 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec, prev_d
     )
 
     # Convert citations into <cite> tags
-    docnames = set([b.text.doc.docname for b in response.bib.values()] + prev_document_ids)
+    docnames = set(
+        [b.text.doc.docname for b in response.bib.values()] + prev_document_ids
+    )
     docnames_str = "|".join(docnames)
     text_names = set(response.bib.keys())
     citation_group_pattern = re.compile(
@@ -108,7 +114,10 @@ def format_response(query: str, response: str, toolspec: PaperQAToolSpec, prev_d
     def replace_individual_citations(match: re.Match):
         quotes_text = match.groupdict()["quotes"]
         text_name = match.groupdict()["citation"].strip()
-        if text_name.split()[0] not in prev_document_ids and text_name not in text_names:
+        if (
+            text_name.split()[0] not in prev_document_ids
+            and text_name not in text_names
+        ):
             return ""
         if quotes_text:
             return re.sub(

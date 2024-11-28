@@ -1,15 +1,16 @@
 import logging
 from typing import List, Optional
 
-import llamaqa
 import nest_asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from llama_index.core.base.llms.types import ChatMessage
-from llamaqa.agents.paperqa.base import PaperQAAgent
 from pydantic import BaseModel
+
+import llamaqa
+from llamaqa.agents.paperqa.base import PaperQAAgent
 
 load_dotenv()
 nest_asyncio.apply()
@@ -65,7 +66,11 @@ async def post_stream_query(payload: QueryPayload):
     agent = PaperQAAgent.from_config()
     return StreamingResponse(
         stream_thoughts_helper(
-            agent, payload.query, payload.history, payload.current_policy, payload.document_ids,
+            agent,
+            payload.query,
+            payload.history,
+            payload.current_policy,
+            payload.document_ids,
         ),
         media_type="text/event-stream",
     )
@@ -83,7 +88,11 @@ async def main():
     async def test_stream_thoughts(query: str, step_by_step=False):
         global history
         response = stream_thoughts_helper(
-            agent, query, history, "AIA HealthShield Gold Max", step_by_step=step_by_step
+            agent,
+            query,
+            history,
+            "AIA HealthShield Gold Max",
+            step_by_step=step_by_step,
         )
         async for _ in response:
             pass

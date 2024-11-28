@@ -6,7 +6,15 @@ from dirtyjson.attributed_containers import AttributedList
 from .insurance_plans import INSURANCE_PLANS
 from .premiums_data import PREMIUMS_DATA
 
-VALID_COMPANIES = ["Income", "AIA", "Great Eastern", "HSBC", "Prudential", "Raffles", "Singlife"]
+VALID_COMPANIES = [
+    "Income",
+    "AIA",
+    "Great Eastern",
+    "HSBC",
+    "Prudential",
+    "Raffles",
+    "Singlife",
+]
 VALID_COVERAGE = ["Standard", "Class A", "Class B1", "Private"]
 VALID_PLANS = [
     "MediShield Life",
@@ -64,7 +72,7 @@ def retrieve_premiums(
     filtered_data = {}
 
     # Check input validity
-    if (age and any(a < 1 for a in age)):
+    if age and any(a < 1 for a in age):
         return "The provided age is invalid."
     elif (
         (company and not any(c in VALID_COMPANIES for c in company))
@@ -97,7 +105,6 @@ def retrieve_premiums(
             continue
 
         for company_key, company_data in age_data["companies"].items():
-
             # If company is specified and no plan is specified, filter for those companies
             if company and not plan and company_key not in company:
                 continue
@@ -195,8 +202,12 @@ def prettify_results_to_list(filtered_data: Dict):
 
 def prettify_results_to_table(filtered_data: Dict):
     table_results = ""
-    
-    if all(len(details.get('companies', {})) == 1 and len(next(iter(details['companies'].values()), {})) == 1 for details in filtered_data.values()):
+
+    if all(
+        len(details.get("companies", {})) == 1
+        and len(next(iter(details["companies"].values()), {})) == 1
+        for details in filtered_data.values()
+    ):
         rows = []
         for age, age_data in filtered_data.items():
             for company, company_data in age_data["companies"].items():
@@ -204,16 +215,18 @@ def prettify_results_to_table(filtered_data: Dict):
                     plan_title = f"**Plan: {INSURANCE_PLANS[company][coverage]}** \n\n"
                     row = {
                         "Age": age,
-                        "MediShield Life premium (Fully payable with MediSave)": format_currency(age_data["medishield_premium"]),
+                        "MediShield Life premium (Fully payable with MediSave)": format_currency(
+                            age_data["medishield_premium"]
+                        ),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
                             f"**Total**: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
                             f"**Payable with MediSave**: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
                             f"**Cash payment required**: {format_currency(coverage_data['cash_outlay'])}"
-                        )
+                        ),
                     }
                     rows.append(row)
 
-        if rows: 
+        if rows:
             table = pd.DataFrame(rows).to_markdown(index=False)
             table_results += f"{plan_title}{table}\n"
 
@@ -225,16 +238,18 @@ def prettify_results_to_table(filtered_data: Dict):
                 for coverage, coverage_data in company_data.items():
                     row = {
                         "Plan": f"**{INSURANCE_PLANS[company][coverage]}**",
-                        "MediShield Life premium (Fully payable by Medisave)": format_currency(age_data["medishield_premium"]),
+                        "MediShield Life premium (Fully payable by Medisave)": format_currency(
+                            age_data["medishield_premium"]
+                        ),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
                             f"**Total**: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
                             f"**Payable with MediSave**: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
                             f"**Cash payment required**: {format_currency(coverage_data['cash_outlay'])}"
-                        )
+                        ),
                     }
                     rows.append(row)
 
-            if rows: 
+            if rows:
                 table = pd.DataFrame(rows).to_markdown(index=False)
                 table_results += f"{age_title}{table}\n\n"
 
@@ -252,7 +267,7 @@ def main():
             company=["AIA"],
             plan=["AIA HealthShield Gold Max A", "IncomeShield Standard Plan"],
             coverage=["Standard"],
-            format = "table"
+            format="table",
         )
     )
 

@@ -339,8 +339,7 @@ def read_doc(
     chunk_chars: int = ...,
     overlap: int = ...,
     page_size_limit: int | None = ...,
-) -> list[Text]:
-    ...
+) -> list[Text]: ...
 
 
 @overload
@@ -352,8 +351,7 @@ def read_doc(
     chunk_chars: int = ...,
     overlap: int = ...,
     page_size_limit: int | None = ...,
-) -> list[Text]:
-    ...
+) -> list[Text]: ...
 
 
 @overload
@@ -365,8 +363,7 @@ def read_doc(
     chunk_chars: int = ...,
     overlap: int = ...,
     page_size_limit: int | None = ...,
-) -> ParsedText:
-    ...
+) -> ParsedText: ...
 
 
 @overload
@@ -378,8 +375,7 @@ def read_doc(
     chunk_chars: int = ...,
     overlap: int = ...,
     page_size_limit: int | None = ...,
-) -> tuple[list[Text], ParsedMetadata]:
-    ...
+) -> tuple[list[Text], ParsedMetadata]: ...
 
 
 def read_doc(
