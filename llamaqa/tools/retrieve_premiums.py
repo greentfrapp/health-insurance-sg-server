@@ -46,6 +46,13 @@ VALID_PLANS = [
     "Singlife Shield Standard Plan",
 ]
 
+COVERAGE_MEANINGS = {
+    "Standard": "(Basic MediShield coverage)",
+    "Class B1": "(Covers up to Class B1 wards in public hospitals)",
+    "Class A": "(Covers up to Class A wards in public hospitals)",
+    "Private": "(Coverage include public and private hospitals)",
+}
+
 
 # Filter the data based on the given arguments
 def retrieve_premiums(
@@ -212,7 +219,7 @@ def prettify_results_to_table(filtered_data: Dict):
         for age, age_data in filtered_data.items():
             for company, company_data in age_data["companies"].items():
                 for coverage, coverage_data in company_data.items():
-                    plan_title = f"**Plan: {INSURANCE_PLANS[company][coverage]}** \n\n"
+                    plan_title = f"**Plan: {INSURANCE_PLANS[company][coverage]}**\n\n{COVERAGE_MEANINGS[coverage]}\n\n"
                     row = {
                         "Age": age,
                         "MediShield Life premium (Fully payable with MediSave)": format_currency(
@@ -237,7 +244,7 @@ def prettify_results_to_table(filtered_data: Dict):
             for company, company_data in age_data["companies"].items():
                 for coverage, coverage_data in company_data.items():
                     row = {
-                        "Plan": f"**{INSURANCE_PLANS[company][coverage]}**",
+                        "Plan": f"**{INSURANCE_PLANS[company][coverage]}**<br>{COVERAGE_MEANINGS[coverage]}",
                         "MediShield Life premium (Fully payable by Medisave)": format_currency(
                             age_data["medishield_premium"]
                         ),
