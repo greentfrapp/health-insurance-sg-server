@@ -2,36 +2,17 @@
 
 import json
 import uuid
-from typing import (
-    Dict,
-    List,
-    Sequence,
-    Tuple,
-    cast,
-)
+from typing import Dict, List, Sequence, Tuple, cast
 
-from llama_index.core.agent.react.step import (
-    ReActAgentWorker,
-    add_user_step_to_reasoning,
-)
-from llama_index.core.agent.react.types import (
-    ActionReasoningStep,
-    BaseReasoningStep,
-    ObservationReasoningStep,
-)
-from llama_index.core.agent.types import (
-    Task,
-    TaskStep,
-    TaskStepOutput,
-)
+from llama_index.core.agent.react.step import (ReActAgentWorker,
+                                               add_user_step_to_reasoning)
+from llama_index.core.agent.react.types import (ActionReasoningStep,
+                                                BaseReasoningStep,
+                                                ObservationReasoningStep)
+from llama_index.core.agent.types import Task, TaskStep, TaskStepOutput
 from llama_index.core.base.llms.types import ChatResponse
-from llama_index.core.callbacks import (
-    CBEventType,
-    EventPayload,
-)
-from llama_index.core.chat_engine.types import (
-    AGENT_CHAT_RESPONSE_TYPE,
-)
+from llama_index.core.callbacks import CBEventType, EventPayload
+from llama_index.core.chat_engine.types import AGENT_CHAT_RESPONSE_TYPE
 from llama_index.core.instrumentation import get_dispatcher
 from llama_index.core.instrumentation.events.agent import AgentToolCallEvent
 from llama_index.core.tools import ToolOutput
@@ -168,7 +149,10 @@ class PaperQAAgentWorker(ReActAgentWorker):
         )
         current_reasoning.append(observation_step)
         if self._verbose:
-            print_text(f"{observation_step.get_content()}\n", color="blue")
+            content = observation_step.get_content()
+            if len(content) > 1000:
+                content = content[:1000] + "...\n[Truncated]"
+            print_text(f"{content}\n", color="blue")
         return (
             current_reasoning,
             tool.metadata.return_direct and not tool_output.is_error if tool else False,
