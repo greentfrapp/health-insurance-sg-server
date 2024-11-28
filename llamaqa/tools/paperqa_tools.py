@@ -193,8 +193,7 @@ Args:
         return f"""
 {data}
 
-Return this in markdown format to the user without modification.
-
-Important: Note that any "Class" in the plan name may not correspond to the ward coverage "Class".
-For example, a Class A plan might only provide coverage for Class B1 wards.
+In your response to the user, always include this table in your response word for word without modification.
 """
+# Important: Note that any "Class" in the plan name may not correspond to the ward coverage "Class".
+# For example, a Class A plan might only provide coverage for Class B1 wards.
