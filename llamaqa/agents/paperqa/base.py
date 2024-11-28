@@ -3,7 +3,7 @@ import json
 import logging
 import os
 import uuid
-from typing import Callable, Optional, Sequence, cast
+from typing import Callable, List, Optional, Sequence, cast
 
 from litellm import completion_cost
 from litellm.exceptions import APIConnectionError, ServiceUnavailableError
@@ -33,12 +33,9 @@ from .parser import PaperQAOutputParser
 from .prompts import PAPERQA_SYSTEM_PROMPT
 from .step import PaperQAAgentWorker
 from .suggest import suggest_follow_up
-from .utils import (
-    format_response,
-    infer_stream_chunk_is_final,
-    parse_action_response,
-    tell_llm_about_failure_in_extract_reasoning_step,
-)
+from .utils import (format_response, infer_stream_chunk_is_final,
+                    parse_action_response,
+                    tell_llm_about_failure_in_extract_reasoning_step)
 
 logger = logging.getLogger("paperqa-agent")
 
@@ -157,7 +154,7 @@ class PaperQAAgent(ReActAgent):
         return self
 
     async def stream_thoughts(
-        self, query: str, current_document: Optional[str] = None, step_by_step=False
+        self, query: str, current_document: Optional[str] = None, document_ids: Optional[List[str]] = None, step_by_step=False
     ):
         self.memory.put(
             ChatMessage(
@@ -337,6 +334,7 @@ class PaperQAAgent(ReActAgent):
                         query,
                         final_response,
                         self.toolspec,
+                        prev_document_ids=document_ids or [],
                     )
                     message["formattedContent"][
                         "suggestedResponses"

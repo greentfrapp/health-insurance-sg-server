@@ -1,16 +1,15 @@
 import logging
 from typing import List, Optional
 
+import llamaqa
 import nest_asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from llama_index.core.base.llms.types import ChatMessage
-from pydantic import BaseModel
-
-import llamaqa
 from llamaqa.agents.paperqa.base import PaperQAAgent
+from pydantic import BaseModel
 
 load_dotenv()
 nest_asyncio.apply()
@@ -34,6 +33,7 @@ class QueryPayload(BaseModel):
     current_policy: Optional[str] = None
     query: str
     history: List[ChatMessage] = []
+    document_ids: List[str] = []
 
 
 @app.get("/status")
@@ -47,11 +47,13 @@ async def stream_thoughts_helper(
     query: str,
     history: Optional[List[ChatMessage]] = None,
     current_document: Optional[str] = None,
+    document_ids: Optional[List[str]] = None,
     step_by_step=False,
 ):
     history = history or []
+    document_ids = document_ids or []
     agent.memory.set(history)
-    stream = agent.stream_thoughts(query, current_document, step_by_step)
+    stream = agent.stream_thoughts(query, current_document, document_ids, step_by_step)
     async for chunk in stream:
         print(f"\033[38;5;228m{chunk}\033[0m")
         yield chunk
@@ -63,7 +65,7 @@ async def post_stream_query(payload: QueryPayload):
     agent = PaperQAAgent.from_config()
     return StreamingResponse(
         stream_thoughts_helper(
-            agent, payload.query, payload.history, payload.current_policy
+            agent, payload.query, payload.history, payload.current_policy, payload.document_ids,
         ),
         media_type="text/event-stream",
     )
@@ -81,7 +83,7 @@ async def main():
     async def test_stream_thoughts(query: str, step_by_step=False):
         global history
         response = stream_thoughts_helper(
-            agent, query, history, "AIA HealthShield Gold Max", step_by_step
+            agent, query, history, "AIA HealthShield Gold Max", step_by_step=step_by_step
         )
         async for _ in response:
             pass
