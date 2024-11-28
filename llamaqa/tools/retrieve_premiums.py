@@ -188,7 +188,7 @@ def prettify_results_to_list(filtered_data: Dict):
                     message += (
                         f"    Plan: {INSURANCE_PLANS[company][coverage]}\n"
                         f"      Additional private insurance premium: {format_currency(coverage_data['additional_insurance_premium'])}\n"
-                        f"        Of which, you can pay with MediSave: {format_currency(min(coverage_data['additional_insurance_premium'], age_data['additional_withdrawal_limit']))}\n"
+                        f"        Of which, you can pay with MediSave: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}\n"
                         f"        The remaining amount to be paid in cash: {format_currency(coverage_data['cash_outlay'])}\n"
                     )
         message += "\nNote: Age refers to your age on your next birthday because the insurance will cover your risk for the year ahead."
@@ -206,7 +206,7 @@ def prettify_results_to_table(filtered_data: Dict):
                     plan_title = f"Plan: {INSURANCE_PLANS[company][coverage]} \n\n"
                     row = {
                         "Age": age,
-                        "MediShield Life premiums (Fully payable with MediSave)": format_currency(age_data["medishield_premium"]),
+                        "MediShield Life premium (Fully payable with MediSave)": format_currency(age_data["medishield_premium"]),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
                             f"Total: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
                             f"  Payable with MediSave: Up to {format_currency(age_data['additional_withdrawal_limit'])}<br>"
@@ -227,7 +227,7 @@ def prettify_results_to_table(filtered_data: Dict):
                 for coverage, coverage_data in company_data.items():
                     row = {
                         "Plan": INSURANCE_PLANS[company][coverage],
-                        "MediShield Life premiums (Fully payable by Medisave)": format_currency(age_data["medishield_premium"]),
+                        "MediShield Life premium (Fully payable by Medisave)": format_currency(age_data["medishield_premium"]),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
                             f"Total: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
                             f"  Payable with MediSave: Up to {format_currency(age_data['additional_withdrawal_limit'])}<br>"
@@ -250,11 +250,11 @@ def main():
     # retrieve_premiums(age=None, company="foo")
     print(
         retrieve_premiums(
-            age=[30, 55],
+            age=[30],
             company=["AIA"],
-            plan=["AIA HealthShield Gold Standard Plan"],
+            plan=["AIA HealthShield Gold Max A"],
             coverage=["Standard"],
-            format = "table"
+            format = "list"
         )
     )
 
