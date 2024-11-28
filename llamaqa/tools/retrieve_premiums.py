@@ -138,9 +138,7 @@ def retrieve_premiums(
                     difference = float(
                         coverage_data.get("additional_insurance_premium", 0)
                     ) - float(age_data.get("additional_withdrawal_limit", 0))
-                    coverage_data["cash_outlay"] = (
-                        difference if difference >= 0 else 0
-                    )
+                    coverage_data["cash_outlay"] = max(0, difference)
                 else:
                     coverage_data["cash_outlay"] = "Not available"
 
@@ -203,14 +201,14 @@ def prettify_results_to_table(filtered_data: Dict):
         for age, age_data in filtered_data.items():
             for company, company_data in age_data["companies"].items():
                 for coverage, coverage_data in company_data.items():
-                    plan_title = f"Plan: {INSURANCE_PLANS[company][coverage]} \n\n"
+                    plan_title = f"**Plan: {INSURANCE_PLANS[company][coverage]}** \n\n"
                     row = {
                         "Age": age,
                         "MediShield Life premium (Fully payable with MediSave)": format_currency(age_data["medishield_premium"]),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
-                            f"Total: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
-                            f"  Payable with MediSave: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
-                            f"  Cash payment required: {format_currency(coverage_data['cash_outlay'])}"
+                            f"**Total**: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
+                            f"**Payable with MediSave**: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
+                            f"**Cash payment required**: {format_currency(coverage_data['cash_outlay'])}"
                         )
                     }
                     rows.append(row)
@@ -221,17 +219,17 @@ def prettify_results_to_table(filtered_data: Dict):
 
     else:
         for age, age_data in filtered_data.items():
-            age_title = f"Age: {age} \n\n"
+            age_title = f"**Age: {age}** \n\n"
             rows = []
             for company, company_data in age_data["companies"].items():
                 for coverage, coverage_data in company_data.items():
                     row = {
-                        "Plan": INSURANCE_PLANS[company][coverage],
+                        "Plan": f"**{INSURANCE_PLANS[company][coverage]}**",
                         "MediShield Life premium (Fully payable by Medisave)": format_currency(age_data["medishield_premium"]),
                         "Additional private insurance premium (Payable with MediSave and cash)": (
-                            f"Total: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
-                            f"  Payable with MediSave: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
-                            f"  Cash payment required: {format_currency(coverage_data['cash_outlay'])}"
+                            f"**Total**: {format_currency(coverage_data['additional_insurance_premium'])}<br>"
+                            f"**Payable with MediSave**: {format_currency(min(float(coverage_data['additional_insurance_premium']), age_data['additional_withdrawal_limit']) if coverage_data['additional_insurance_premium'] != 'Not available' else 'Up to ' + format_currency(age_data['additional_withdrawal_limit']))}<br>"
+                            f"**Cash payment required**: {format_currency(coverage_data['cash_outlay'])}"
                         )
                     }
                     rows.append(row)
