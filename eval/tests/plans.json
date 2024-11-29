@@ -1,0 +1,68 @@
+[
+  {
+    "label": "aia",
+    "setup": {
+      "current_document": "AIA HealthShield Gold Max"
+    },
+    "messages": [
+      {
+        "content": "what are the different plans in this policy",
+        "assert_response_includes": ["Standard", "B Lite", "B", "A"]
+      }
+    ]
+  },
+  {
+    "label": "ntuc",
+    "messages": [
+      {
+        "content": "what are the different plans in Enhanced IncomeShield",
+        "assert_response_includes": ["Preferred", "Advantage", "Basic"]
+      }
+    ]
+  },
+  {
+    "label": "ge",
+    "messages": [
+      {
+        "content": "what are the names of the different plans provided by Great Eastern's policy",
+        "assert_response_includes": ["Standard", "B Plus", "A Plus", "P Plus"]
+      }
+    ]
+  },
+  {
+    "label": "hsbc",
+    "messages": [
+      {
+        "content": "what are the different plans provided by HSBC",
+        "assert_response_includes": ["Standard", "Plan B", "Plan A"]
+      }
+    ]
+  },
+  {
+    "label": "prudential",
+    "messages": [
+      {
+        "content": "what are the different plans provided by Prudential",
+        "assert_response_includes": ["Standard", "Plus", "Premier"]
+      }
+    ]
+  },
+  {
+    "label": "raffles",
+    "messages": [
+      {
+        "content": "what are the different plans provided by Raffles",
+        "assert_response_includes": ["Standard", "B", "A", "Private"]
+      }
+    ]
+  },
+  {
+    "label": "singlife",
+    "messages": [
+      {
+        "content": "what are the different plans provided by Singlife",
+        "assert_response_includes": ["Plan 1", "Plan 2", "Plan 3"]
+      }
+    ]
+  }
+]

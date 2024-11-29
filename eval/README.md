@@ -23,9 +23,15 @@ See `./tests/basic.json` for an example.
 Run a test with
 
 ```
-# To run all tests in basic.json
-$ uv run eval basic.json
+# To run all tests
+$ uv run eval --all
 
-# To run only a subset of tests in basic.json, indicated by the test label
-$ uv run eval basic.json --labels plans openended  
+# To run only tests in plans.json
+$ uv run eval --test plans.json  
+
+# To run only a subset of tests in plans.json
+$ uv run eval --test plans.json --labels aia ge prudential raffles
+
+# To view thoughts and conversation use the --verbose flag 
+$ uv run eval --test plans.json --verbose
 ```
