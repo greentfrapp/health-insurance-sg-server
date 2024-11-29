@@ -1,16 +1,15 @@
 import logging
 from typing import List, Optional
 
+import llamaqa
 import nest_asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from llama_index.core.base.llms.types import ChatMessage
-from pydantic import BaseModel
-
-import llamaqa
 from llamaqa.agents.paperqa.base import PaperQAAgent
+from pydantic import BaseModel
 
 load_dotenv()
 nest_asyncio.apply()
@@ -118,8 +117,10 @@ async def main():
 
 
 if __name__ == "__main__":
-    import asyncio
+    # import asyncio
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(main())
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
+    # loop.run_until_complete(main())
+    import uvicorn
+    uvicorn.run(app)
