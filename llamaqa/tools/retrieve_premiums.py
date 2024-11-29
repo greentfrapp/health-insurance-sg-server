@@ -15,7 +15,7 @@ VALID_COMPANIES = [
     "Raffles",
     "Singlife",
 ]
-VALID_COVERAGE = ["Standard", "Class A", "Class B1", "Private"]
+VALID_COVERAGE = ["Standard Class B1", "Class B1", "Class A", "Private"]
 VALID_PLANS = [
     "MediShield Life",
     "Enchanced IncomeShield Preferred",
@@ -47,7 +47,7 @@ VALID_PLANS = [
 ]
 
 COVERAGE_MEANINGS = {
-    "Standard": "(Basic MediShield coverage)",
+    "Standard Class B1": "(Basic MediShield coverage)",
     "Class B1": "(Covers up to Class B1 wards in public hospitals)",
     "Class A": "(Covers up to Class A wards in public hospitals)",
     "Private": "(Coverage include public and private hospitals)",
