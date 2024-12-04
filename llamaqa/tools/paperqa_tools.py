@@ -151,10 +151,11 @@ This tool will show the premiums payable, divided into two components.
 Insurance premiums depend on age, policy, and plan or coverage selected.
 
 The coverage can be one of:
-- Standard: the basic version of the policy
-- B: enhanced policy that covers up to Class B1 wards in public hospitals
-- A: similar to B but covers up to Class A wards in public hospitals
-- Private: similar to A but also covers private hospitals
+- Basic: the basic MediShield Life coverage that aims to cover Class B2 and Class C wards in public hospitals
+- Standard Class B1: a standard policy that aims to cover up to Class B1 wards in public hospitals and has benefits set by the government
+- Class B1: similar to Standard Class B1 (covers up to Class B1 wards in public hospitals) but has more benefits
+- Class A: similar to Class B1 but covers up to Class A wards in public hospitals and has more benefits
+- Private: similar to Class A but also covers private hospitals and has more benefits
 
 Args:
     ages (List[int]) = None: The ages to retrieve premiums. If None, defaults to [10, 30, 50, 70].
