@@ -63,10 +63,6 @@ async def stream_thoughts_helper(
 
 @app.post("/stream_query")
 async def post_stream_query(payload: QueryPayload):
-    import asyncio
-
-    await asyncio.sleep(3)
-    return
     agent = PaperQAAgent.from_config()
     return StreamingResponse(
         stream_thoughts_helper(
