@@ -274,10 +274,9 @@ def main():
     print(
         retrieve_premiums(
             age=[18, 30, 99],
-            company=["AIA"],
+            company=None,
             plan=["MediShield Life"],
-            # coverage=["Basic"],
-            format="list",
+            format="table",
         )
     )
 
