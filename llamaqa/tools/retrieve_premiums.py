@@ -213,7 +213,23 @@ def prettify_results_to_list(filtered_data: Dict):
 def prettify_results_to_table(filtered_data: Dict):
     table_results = ""
 
-    if all(
+    if not all("companies" in filtered_data[age_key] for age_key in filtered_data):
+        rows = []
+        plan_title = f"**MediShield Life**<br>(Covers most Class B2 or C ward bills) \n\n"
+        for age, age_data in filtered_data.items():
+            row = {
+                "Age": age,
+                "MediShield Life premium (Fully payable by Medisave)": format_currency(
+                    age_data["medishield_premium"]
+                ),
+            }
+            rows.append(row)
+
+        if rows:
+            table = pd.DataFrame(rows).to_markdown(index=False)
+            table_results += f"{plan_title}{table}\n\n"
+
+    elif all(
         len(details.get("companies", {})) == 1
         and len(next(iter(details["companies"].values()), {})) == 1
         for details in filtered_data.values()
