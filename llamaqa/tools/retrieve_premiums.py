@@ -47,8 +47,8 @@ VALID_PLANS = [
 ]
 
 COVERAGE_MEANINGS = {
-    "Basic": "(Basic MediShield coverage)",
-    "Standard Class B1": "(Standard coverage for B1 wards in public hospitals)",
+    "Basic": "(Covers most Class B2 or C ward bills)",
+    "Standard Class B1": "(Covers most Class B1 ward bills)",
     "Class B1": "(Covers up to Class B1 wards in public hospitals)",
     "Class A": "(Covers up to Class A wards in public hospitals)",
     "Private": "(Covers up to standard rooms in private hospitals)",
@@ -213,7 +213,23 @@ def prettify_results_to_list(filtered_data: Dict):
 def prettify_results_to_table(filtered_data: Dict):
     table_results = ""
 
-    if all(
+    if not all("companies" in filtered_data[age_key] for age_key in filtered_data):
+        rows = []
+        plan_title = f"**MediShield Life**<br>(Covers most Class B2 or C ward bills) \n\n"
+        for age, age_data in filtered_data.items():
+            row = {
+                "Age": age,
+                "MediShield Life premium (Fully payable by Medisave)": format_currency(
+                    age_data["medishield_premium"]
+                ),
+            }
+            rows.append(row)
+
+        if rows:
+            table = pd.DataFrame(rows).to_markdown(index=False)
+            table_results += f"{plan_title}{table}\n\n"
+
+    elif all(
         len(details.get("companies", {})) == 1
         and len(next(iter(details["companies"].values()), {})) == 1
         for details in filtered_data.values()
@@ -274,10 +290,9 @@ def main():
     print(
         retrieve_premiums(
             age=[18, 30, 99],
-            company=["AIA"],
+            company=None,
             plan=["MediShield Life"],
-            # coverage=["Basic"],
-            format="list",
+            format="table",
         )
     )
 

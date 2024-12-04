@@ -178,6 +178,10 @@ Args:
         plans: Optional[List[str]] = None,
         coverages: Optional[List[str]] = None,
     ):
+        plans = plans or []
+        if "MediShield Life" in policies:
+            plans.append("MediShield Life")
+            policies.remove("MediShield Life")
         # Map policies to companies
         policies_map = {
             "NTUC Income IncomeShield Standard": "Income",
