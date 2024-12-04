@@ -48,6 +48,9 @@ class PaperQAToolSpec(BaseToolSpec):
         desc=f"""
 Find and return pieces of evidence that are relevant
 to a given query and policy.
+
+Always provide a policy where possible.
+
 This can be called multiple times with varying search terms
 if insufficient information was found.
 This should only be called for queries relevant to insurance.
