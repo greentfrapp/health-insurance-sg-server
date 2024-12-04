@@ -47,8 +47,8 @@ VALID_PLANS = [
 ]
 
 COVERAGE_MEANINGS = {
-    "Basic": "(Basic MediShield coverage)",
-    "Standard Class B1": "(Standard coverage for B1 wards in public hospitals)",
+    "Basic": "(Covers most Class B2 or C ward bills)",
+    "Standard Class B1": "(Covers most Class B1 ward bills)",
     "Class B1": "(Covers up to Class B1 wards in public hospitals)",
     "Class A": "(Covers up to Class A wards in public hospitals)",
     "Private": "(Covers up to standard rooms in private hospitals)",
