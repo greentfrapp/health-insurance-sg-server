@@ -6,6 +6,7 @@ from typing import List, Optional
 
 import nest_asyncio
 from dotenv import load_dotenv
+
 from llamaqa.agents.paperqa.base import PaperQAAgent
 
 from .model_grader import ModelGrader, system_fn
@@ -37,7 +38,11 @@ async def test_stream_thoughts(
     return final_response, history
 
 
-async def eval(test_file: Optional[str] = None, test_labels: Optional[List[str]] = None, verbose=False):
+async def eval(
+    test_file: Optional[str] = None,
+    test_labels: Optional[List[str]] = None,
+    verbose=False,
+):
     if test_file is None:
         tests = []
         for file_path in Path("eval/tests/").glob("*.json"):

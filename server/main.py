@@ -1,15 +1,16 @@
 import logging
 from typing import List, Optional
 
-import llamaqa
 import nest_asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from llama_index.core.base.llms.types import ChatMessage
-from llamaqa.agents.paperqa.base import PaperQAAgent
 from pydantic import BaseModel
+
+import llamaqa
+from llamaqa.agents.paperqa.base import PaperQAAgent
 
 load_dotenv()
 nest_asyncio.apply()
@@ -62,6 +63,10 @@ async def stream_thoughts_helper(
 
 @app.post("/stream_query")
 async def post_stream_query(payload: QueryPayload):
+    import asyncio
+
+    await asyncio.sleep(3)
+    return
     agent = PaperQAAgent.from_config()
     return StreamingResponse(
         stream_thoughts_helper(
@@ -123,4 +128,5 @@ if __name__ == "__main__":
     # asyncio.set_event_loop(loop)
     # loop.run_until_complete(main())
     import uvicorn
+
     uvicorn.run(app)

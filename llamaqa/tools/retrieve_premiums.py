@@ -157,9 +157,9 @@ def retrieve_premiums(
                     coverage_data["cash_outlay"] = "Not available"
 
                 # Add the selected plans data (all plans if 'plan' is not specified) to the filtered data dictionary
-                filtered_data[age_key]["companies"][company_key][coverage_key] = (
-                    coverage_data
-                )
+                filtered_data[age_key]["companies"][company_key][
+                    coverage_key
+                ] = coverage_data
 
     if format == "table":
         return prettify_results_to_table(filtered_data)
