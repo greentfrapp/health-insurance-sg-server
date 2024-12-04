@@ -4,11 +4,15 @@ import json
 import uuid
 from typing import Dict, List, Sequence, Tuple, cast
 
-from llama_index.core.agent.react.step import (ReActAgentWorker,
-                                               add_user_step_to_reasoning)
-from llama_index.core.agent.react.types import (ActionReasoningStep,
-                                                BaseReasoningStep,
-                                                ObservationReasoningStep)
+from llama_index.core.agent.react.step import (
+    ReActAgentWorker,
+    add_user_step_to_reasoning,
+)
+from llama_index.core.agent.react.types import (
+    ActionReasoningStep,
+    BaseReasoningStep,
+    ObservationReasoningStep,
+)
 from llama_index.core.agent.types import Task, TaskStep, TaskStepOutput
 from llama_index.core.base.llms.types import ChatResponse
 from llama_index.core.callbacks import CBEventType, EventPayload
