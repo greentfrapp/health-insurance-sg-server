@@ -47,6 +47,7 @@ VALID_PLANS = [
 ]
 
 COVERAGE_MEANINGS = {
+    "Basic": "(Basic MediShield coverage)",
     "Standard Class B1": "(Standard coverage for B1 wards in public hospitals)",
     "Class B1": "(Covers up to Class B1 wards in public hospitals)",
     "Class A": "(Covers up to Class A wards in public hospitals)",
@@ -105,7 +106,9 @@ def retrieve_premiums(
                 "companies": {},
             }
 
-        if (plan and plan == ["MediShield Life"]) or (coverage and coverage == ["Basic"]):
+        if (plan and plan == ["MediShield Life"]) or (
+            coverage and coverage == ["Basic"]
+        ):
             filtered_data[age_key] = {
                 "medishield_premium": age_data.get("medishield_premium", "N/A"),
             }
