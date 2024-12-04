@@ -15,7 +15,7 @@ VALID_COMPANIES = [
     "Raffles",
     "Singlife",
 ]
-VALID_COVERAGE = ["Standard Class B1", "Class B1", "Class A", "Private"]
+VALID_COVERAGE = ["Basic", "Standard Class B1", "Class B1", "Class A", "Private"]
 VALID_PLANS = [
     "MediShield Life",
     "Enchanced IncomeShield Preferred",
@@ -47,10 +47,11 @@ VALID_PLANS = [
 ]
 
 COVERAGE_MEANINGS = {
-    "Standard Class B1": "(Basic MediShield coverage)",
+    "Basic": "(Basic MediShield coverage)",
+    "Standard Class B1": "(Standard coverage for B1 wards in public hospitals)",
     "Class B1": "(Covers up to Class B1 wards in public hospitals)",
     "Class A": "(Covers up to Class A wards in public hospitals)",
-    "Private": "(Coverage include public and private hospitals)",
+    "Private": "(Covers up to standard rooms in private hospitals)",
 }
 
 
@@ -105,7 +106,9 @@ def retrieve_premiums(
                 "companies": {},
             }
 
-        if plan and plan == ["MediShield Life"]:
+        if (plan and plan == ["MediShield Life"]) or (
+            coverage and coverage == ["Basic"]
+        ):
             filtered_data[age_key] = {
                 "medishield_premium": age_data.get("medishield_premium", "N/A"),
             }
@@ -272,9 +275,9 @@ def main():
         retrieve_premiums(
             age=[18, 30, 99],
             company=["AIA"],
-            plan=["AIA HealthShield Gold Max A", "IncomeShield Standard Plan"],
-            coverage=["Standard"],
-            format="table",
+            plan=["MediShield Life"],
+            # coverage=["Basic"],
+            format="list",
         )
     )
 
