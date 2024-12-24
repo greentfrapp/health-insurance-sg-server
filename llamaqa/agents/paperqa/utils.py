@@ -2,13 +2,15 @@ import re
 from collections import OrderedDict
 from typing import List, Optional, cast
 
-from llama_index.core.callbacks import CallbackManager, CBEventType, EventPayload
+from llama_index.core.callbacks import (CallbackManager, CBEventType,
+                                        EventPayload)
 from llama_index.core.tools import ToolOutput
 
 from ...tools.paperqa_tools import PaperQAToolSpec
 from ...tools.retrieve_evidence import EXAMPLE_CITATION
 from ...utils.answer import Answer
 from ...utils.context import Context
+from .prompts import FAILED_PARSING_PROMPT
 
 
 def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool:
@@ -146,6 +148,15 @@ def format_response(
     response.answer = re.sub(period_citation_pattern, move_period_mark, response.answer)
     response.answer = re.sub(re.compile("\\.+"), ".", response.answer)
 
+    # Raise error if answer still contains raw citations
+    if len(docnames_str):
+        raw_citation_pattern = re.compile(
+            fr"\(({docnames_str})"
+        )
+        match = re.search(raw_citation_pattern, response.answer)
+        if match:
+            raise ValueError
+
     # Format response
     references = []
     for r in references_list:
@@ -184,20 +195,12 @@ def tell_llm_about_failure_in_extract_reasoning_step(
     we will emit a Tool Output that we prepared (at initialization time) to the LLM, so that
     the LLM can be more cooperative in its next generation.
     """
-    message = """Error: Could not parse output. Please follow the thought-action-input format. Try again.
-Maybe you should try calling the retrieve_evidence_by_query or retrieve_policy_overview tool.
-Remember that the format should be
-```
-Thought: I need to use a tool to help me answer the question.
-Action: tool name if using a tool.
-Action Input: the input to the tool, in a JSON format representing the kwargs (e.g. {{"input": "hello world", "num_beams": 5}})
-```
-"""
+
     dummy_tool_output = ToolOutput(
-        content=message,
+        content=FAILED_PARSING_PROMPT,
         tool_name="unknown",
         raw_input={},
-        raw_output=message,
+        raw_output=FAILED_PARSING_PROMPT,
     )
     with callback_manager.event(
         CBEventType.FUNCTION_CALL,

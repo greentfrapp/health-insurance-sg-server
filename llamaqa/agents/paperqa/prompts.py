@@ -1,3 +1,4 @@
+from ...tools.retrieve_evidence import EXAMPLE_CITATION, EXAMPLE_CITATION_QUOTE
 from ...utils.policies import VALID_POLICIES
 
 PAPERQA_SYSTEM_PROMPT = f"""\
@@ -62,4 +63,21 @@ Answer: Sorry, I cannot answer your query.
 ## Current Conversation
 Below is the current conversation consisting of interleaving human and assistant messages.
 
+"""
+
+
+FAILED_PARSING_PROMPT = f"""Error: Could not parse output. Please follow the thought-action-input format. Try again.
+Remember that the format should be
+```
+Thought: I need to use a tool to help me answer the question.
+Action: tool name if using a tool.
+Action Input: the input to the tool, in a JSON format representing the kwargs (e.g. {{"input": "hello world", "num_beams": 5}})
+```
+"""
+
+
+FAILED_CITATION_PROMPT = f"""Error: Invalid citation format.
+Remember that citations should be formatted as
+{EXAMPLE_CITATION}
+{EXAMPLE_CITATION_QUOTE}
 """
