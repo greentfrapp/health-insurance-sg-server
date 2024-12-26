@@ -150,10 +150,11 @@ def format_response(
 
     # Raise error if answer still contains raw citations
     if len(docnames_str):
+        answer_no_text = re.sub("<cite>.*?</cite>", "", response.answer)
         raw_citation_pattern = re.compile(
-            fr"\(({docnames_str})"
+            fr"({docnames_str})"
         )
-        match = re.search(raw_citation_pattern, response.answer)
+        match = re.search(raw_citation_pattern, answer_no_text)
         if match:
             raise ValueError
 

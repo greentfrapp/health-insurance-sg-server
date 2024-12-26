@@ -86,4 +86,7 @@ FAILED_CITATION_PROMPT = f"""Error: Invalid citation format.
 Remember that citations should be formatted as
 {EXAMPLE_CITATION}
 {EXAMPLE_CITATION_QUOTE}
+
+Follow the format EXACTLY. Do NOT add other things such as quotation marks or semicolons. 
+Do NOT write out the quote inside the citation.
 """
