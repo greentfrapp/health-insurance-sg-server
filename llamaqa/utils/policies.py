@@ -9,12 +9,12 @@ POLICY_IDS = {
         "eea20182-1804-5247-b220-8d9f593f43dd",
         "a1eee798-7643-5cac-ae20-73e620c7dc7f",
     ],
-    "NTUC Income IncomeShield Standard": [
-        "0000c9d8-6542-5304-8564-cfbd84e5b932",
-        "b83e85ba-774e-5b3f-897f-da1067f7fcb0",
-        "89b6d069-92ba-5e4d-99e7-f173afd5fa87",
-    ],
-    "NTUC Income Enhanced IncomeShield": [
+    # "NTUC Income IncomeShield Standard": [
+    #     "0000c9d8-6542-5304-8564-cfbd84e5b932",
+    #     "b83e85ba-774e-5b3f-897f-da1067f7fcb0",
+    #     "89b6d069-92ba-5e4d-99e7-f173afd5fa87",
+    # ],
+    "NTUC Income IncomeShield": [
         "8ca774fa-e860-504f-9989-3a0908b55748",
         "116759d8-ed64-5055-a9eb-00ecea700ddb",
         "ae49e93b-8a16-5ee2-a8b9-4cc8e2fc19c4",

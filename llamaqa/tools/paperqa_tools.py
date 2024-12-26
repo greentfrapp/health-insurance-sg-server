@@ -11,6 +11,7 @@ from ..utils.logger import CostLogger
 from ..utils.policies import VALID_POLICIES
 from .gather_evidence import gather_evidence
 from .retrieve_evidence import retrieve_evidence
+from .retrieve_policy_plans_and_riders import retrieve_policy_plans_and_riders
 from .retrieve_premiums import VALID_COVERAGE, VALID_PLANS, retrieve_premiums
 from .utils import tool_metadata
 
@@ -20,6 +21,7 @@ class PaperQAToolSpec(BaseToolSpec):
         "gather_evidence_by_query",
         "gather_policy_overview",
         "retrieve_evidence",
+        "retrieve_policy_plans_and_riders",
         "retrieve_premiums",
     ]
     store: VectorStore
@@ -43,6 +45,20 @@ class PaperQAToolSpec(BaseToolSpec):
         self.embedding_model = embedding_model
         self.summary_llm_model = summary_llm_model
         self.cost_logger = cost_logger or CostLogger()
+
+    @tool_metadata(
+        desc=f"""
+Retrieve list of plans and riders for specific policies.
+
+Args:
+    policies (List[str]) = None: A list of policies from {VALID_POLICIES}.
+""",
+        output_desc="Retrieving plans and riders for {policies}...",
+    )
+    def retrieve_policy_plans_and_riders(self, policies: List[str]) -> str:
+        return retrieve_policy_plans_and_riders(
+            policies,
+        )
 
     @tool_metadata(
         desc=f"""
@@ -186,6 +202,7 @@ Args:
         policies_map = {
             "NTUC Income IncomeShield Standard": "Income",
             "NTUC Income Enhanced IncomeShield": "Income",
+            "NTUC Income IncomeShield": "Income",
             "AIA HealthShield Gold Max": "AIA",
             "Great Eastern GREAT SupremeHealth": "Great Eastern",
             "HSBC Life Shield": "HSBC",

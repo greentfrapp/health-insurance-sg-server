@@ -63,6 +63,7 @@ Answer: Sorry, I cannot answer your query.
     - Do NOT say "in the given context"
     - Do NOT say "according to the tools provided"
     - Do NOT say "using the current tools"
+    - Do NOT say "listed in the observation"
     - Do NOT say anything similar to the above phrases
 
 ## Current Conversation
