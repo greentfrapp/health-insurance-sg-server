@@ -30,12 +30,13 @@ from ...utils.logger import CostLogger
 from ...utils.policies import VALID_POLICIES
 from .fallback import FALLBACK_FINAL_RESPONSE, FALLBACK_RESPONSE_CONTENT
 from .parser import PaperQAOutputParser
-from .prompts import (FAILED_CITATION_PROMPT, FAILED_PARSING_PROMPT,
+from .prompts import (FAILED_ANSWER_PROMPT, FAILED_CITATION_PROMPT,
+                      FAILED_PARSING_PROMPT, FAILED_THOUGHT_PROMPT,
                       PAPERQA_SYSTEM_PROMPT)
 from .step import PaperQAAgentWorker
 from .suggest import suggest_follow_up
 from .utils import (format_response, infer_stream_chunk_is_final,
-                    parse_action_response,
+                    parse_action_response, parse_answer_response,
                     tell_llm_about_failure_in_extract_reasoning_step)
 
 logger = logging.getLogger("paperqa-agent")
@@ -219,9 +220,11 @@ class PaperQAAgent(ReActAgent):
                         value = chunk.message.content[len(response_buffer) :]
                         yield value
                         response_buffer += value
-                        is_done = infer_stream_chunk_is_final(response_buffer, [])
 
                     response_buffer = parse_action_response(response_buffer)
+                    is_done = infer_stream_chunk_is_final(response_buffer)
+                    if is_done:
+                        response_buffer = parse_answer_response(response_buffer)
 
                     response_success = True
                 except (APIConnectionError, ServiceUnavailableError) as e:
@@ -241,11 +244,6 @@ class PaperQAAgent(ReActAgent):
                 )
                 yield FALLBACK_FINAL_RESPONSE
                 return
-
-            if "\nThought: " in response_buffer:
-                response_buffer = response_buffer.split("\nThought: ")[0]
-            if "```Thought: " in response_buffer:
-                response_buffer = response_buffer.split("```Thought: ")[0] + "```"
 
             if not is_done:
                 self.memory.put(
@@ -316,7 +314,7 @@ class PaperQAAgent(ReActAgent):
                 self.cost_logger.log_cost(cost)
 
             # Check citations are valid
-            citation_error = False
+            final_parsing_error = False
             if is_done:
                 try:
                     final_response = response_buffer.split("Answer:")[-1].strip()
@@ -326,14 +324,20 @@ class PaperQAAgent(ReActAgent):
                         self.toolspec,
                         prev_document_ids=document_ids or [],
                     )
-                except ValueError:
-                    citation_error = True
+                except ValueError as e:
+                    final_parsing_error = True
+                    error_message = str(e)
                     self.memory.put(
                         ChatMessage(role=MessageRole.ASSISTANT, content=response_buffer)
                     )
-                    self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_CITATION_PROMPT))
+                    if error_message == "Incorrect citations":
+                        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_CITATION_PROMPT))
+                    elif error_message == "Found \"Thought:\"":
+                        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_THOUGHT_PROMPT))
+                    else:
+                        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_ANSWER_PROMPT))
 
-            if parse_success and not citation_error:
+            if parse_success and not final_parsing_error:
                 if step_by_step:
                     interrupt = input("Enter to continue or 'q' to quit: ")
                     if interrupt == "q":

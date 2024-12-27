@@ -90,3 +90,23 @@ Remember that citations should be formatted as
 Follow the format EXACTLY. Do NOT add other things such as quotation marks or semicolons. 
 Do NOT write out the quote inside the citation.
 """
+
+
+FAILED_THOUGHT_PROMPT = f"""Error: Could not parse output. If you have enough information
+to answer the question without using any more tools, you MUST respond
+in the one of the following two formats:
+
+```
+Thought: I can answer without using any more tools.
+Answer: [your answer here]
+```
+
+```
+Thought: I cannot answer the question with the provided tools.
+Answer: Sorry, I cannot answer your query.
+```
+"""
+
+
+FAILED_ANSWER_PROMPT = f"""Error: Could not parse output. There seems to be an issue with the way
+your answer is formatted. Try rephrasing or formatting it in another way."""

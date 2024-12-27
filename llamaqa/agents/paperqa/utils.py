@@ -13,7 +13,7 @@ from ...utils.context import Context
 from .prompts import FAILED_PARSING_PROMPT
 
 
-def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool:
+def infer_stream_chunk_is_final(chunk: str) -> bool:
     """Infers if a chunk from a live stream is the start of the final
     reasoning step. (i.e., and should eventually become
     ResponseReasoningStep — not part of this function's logic tho.).
@@ -25,22 +25,15 @@ def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool
     Returns:
         bool: Boolean on whether the chunk is the start of the final response
     """
-    latest_content = chunk
-    if latest_content:
-        # doesn't follow thought-action format
-        # keep first chunks
-        if len(latest_content) < len("Thought"):
-            missed_chunks_storage.append(chunk)
-        elif "Action:" in latest_content and "Action: None" not in latest_content:
-            return False
-        elif (
-            not latest_content.startswith("Thought:")
-            and "Thought:" not in latest_content
-        ):
-            return True
-        elif "Answer:" in latest_content:
-            missed_chunks_storage.clear()
-            return True
+    if not chunk: return False
+    # doesn't follow thought-action format
+    # keep first chunks
+    if "Action:" in chunk and "Action: None" not in chunk:
+        return False
+    elif "Thought:" not in chunk:
+        return True
+    elif "Answer:" in chunk:
+        return True
     return False
 
 
@@ -156,7 +149,10 @@ def format_response(
         )
         match = re.search(raw_citation_pattern, answer_no_text)
         if match:
-            raise ValueError
+            raise ValueError("Incorrect citations")
+    # Raise error if answer contains "Thought:"
+        if response.answer.startswith("Thought:") or "\nThought:" in response.answer:
+            raise ValueError("Found \"Thought:\"")
 
     # Format response
     references = []
@@ -223,5 +219,14 @@ def parse_action_response(response: str):
     match = re.findall(action_pattern, response)
     if len(match):
         return match[0]
+    else:
+        return response
+
+
+def parse_answer_response(response: str):
+    answer_pattern = re.compile(r"(Thought:.*?\n+Answer:.*?)($|Thought:)", re.DOTALL)
+    match = re.search(answer_pattern, response)
+    if match and match.groups():
+        return match.groups()[0]
     else:
         return response
