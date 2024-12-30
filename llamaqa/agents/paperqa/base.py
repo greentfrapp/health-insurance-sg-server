@@ -189,6 +189,8 @@ class PaperQAAgent(ReActAgent):
         step = step_queue.popleft()
         while True:
             iters += 1
+            if iters >= max_iters:
+                break
 
             if step.input is not None:
                 add_user_step_to_reasoning(
@@ -327,6 +329,7 @@ class PaperQAAgent(ReActAgent):
                         prev_document_ids=document_ids or [],
                     )
                 except ValueError as e:
+                    print(f"Error: {e}")
                     final_parsing_error = True
                     error_message = str(e)
                     self.memory.put(
@@ -346,8 +349,6 @@ class PaperQAAgent(ReActAgent):
                         quit()
                 if is_done:
                     break
-            if iters >= max_iters:
-                break
 
         final_response = response_buffer.split("Answer:")[-1].strip()
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=final_response))

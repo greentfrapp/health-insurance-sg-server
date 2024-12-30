@@ -5,6 +5,7 @@ from typing import List, Optional, cast
 from llama_index.core.callbacks import (CallbackManager, CBEventType,
                                         EventPayload)
 from llama_index.core.tools import ToolOutput
+from llama_index.llms.litellm import LiteLLM
 
 from ...tools.paperqa_tools import PaperQAToolSpec
 from ...tools.retrieve_evidence import EXAMPLE_CITATION
@@ -94,17 +95,17 @@ def format_response(
     docnames_str = "|".join(docnames)
     text_names = set(response.bib.keys())
     citation_group_pattern = re.compile(
-        f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\d+(, quote\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\d+((,|;) quote\\d+)*)?)*\\)"
+        f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+(, quote\s?\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+((,|;) quote\\s?\\d+)*)?)*\\)"
     )
     citation_single_pattern = re.compile(
-        f"((?P<citation>({docnames_str}) pages \\d+-\\d+),?(?P<quotes> quote\\d+((,|;) quote\\d+)*)?)((,|;) )?"
+        f"((?P<citation>({docnames_str}) pages \\d+-\\d+),?(?P<quotes> quote\\s?\\d+((,|;) quote\\s?\\d+)*)?)((,|;) )?"
     )
 
     references_list = []
 
     def create_quote_tag(match: re.Match, text_name: str):
         references_list.append(f"{text_name} {match.groupdict()['q']}")
-        return f"<doc>{text_name} {match.groupdict()['q']}</doc>"
+        return f"<doc>{text_name} {match.groupdict()['q'].replace(' ', '')}</doc>"
 
     def replace_individual_citations(match: re.Match):
         quotes_text = match.groupdict()["quotes"]
@@ -116,7 +117,7 @@ def format_response(
             return ""
         if quotes_text:
             return re.sub(
-                "(?P<q>quote\\d+)(, )?",
+                "(?P<q>quote\s?\\d+)(, )?",
                 lambda m: create_quote_tag(m, text_name),
                 quotes_text,
             )
@@ -149,10 +150,20 @@ def format_response(
         )
         match = re.search(raw_citation_pattern, answer_no_text)
         if match:
+            print(f"\033[38;5;196m{list(docnames)}\033[0m")
+            print(f"\033[38;5;196m{answer_no_text}\033[0m")
             raise ValueError("Incorrect citations")
+        if content_has_references(answer_no_text):
+            print(f"\033[38;5;196m{list(docnames)}\033[0m")
+            print(f"\033[38;5;196m{answer_no_text}\033[0m")
+            raise ValueError("Incorrect citations")
+    elif content_has_references(response.answer):
+        print(f"\033[38;5;196m{list(docnames)}\033[0m")
+        print(f"\033[38;5;196m{response.answer}\033[0m")
+        raise ValueError("Incorrect citations")
     # Raise error if answer contains "Thought:"
-        if response.answer.startswith("Thought:") or "\nThought:" in response.answer:
-            raise ValueError("Found \"Thought:\"")
+    if response.answer.startswith("Thought:") or "\nThought:" in response.answer:
+        raise ValueError("Found \"Thought:\"")
 
     # Format response
     references = []
@@ -230,3 +241,16 @@ def parse_answer_response(response: str):
         return match.groups()[0]
     else:
         return response
+
+
+def content_has_references(content: str):
+    llm = LiteLLM("gemini/gemini-1.5-flash-002")
+    response = llm.complete(
+        f"""
+Does the text below have any citations. Answer only YES or NO.
+
+{content}
+"""
+    )
+
+    return "yes" in str(response).lower()

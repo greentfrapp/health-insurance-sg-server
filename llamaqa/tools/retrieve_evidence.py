@@ -27,8 +27,8 @@ QA_PROMPT = (
     "Answer ({answer_length}, please split into paragraphs of about 50 to 60 words each):"
 )
 
-EXAMPLE_CITATION: str = "(abc2012Example pages 3-4)"
-EXAMPLE_CITATION_QUOTE: str = "(abc2012Example pages 3-4 quote1, quote2, abc2012Example pages 7-8, abc2012Example pages 10-13 quote1)"
+EXAMPLE_CITATION: str = "(a4219430Example2012 pages 3-4)"
+EXAMPLE_CITATION_QUOTE: str = "(a4219430Example2012 pages 3-4 quote1, quote2, a4219430Example2012 pages 7-8, a4219430Example2012 pages 10-13 quote1)"
 
 
 def retrieve_evidence(
