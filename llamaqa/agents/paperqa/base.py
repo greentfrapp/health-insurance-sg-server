@@ -208,6 +208,7 @@ class PaperQAAgent(ReActAgent):
             )
 
             response_success = False
+            parse_success = False
             num_retries = 3
             retry_after = 3
             current_retry = 0
@@ -224,6 +225,7 @@ class PaperQAAgent(ReActAgent):
                     response_buffer = parse_action_response(response_buffer)
                     is_done = infer_stream_chunk_is_final(response_buffer)
                     if is_done:
+                        parse_success = True
                         response_buffer = parse_answer_response(response_buffer)
 
                     response_success = True
