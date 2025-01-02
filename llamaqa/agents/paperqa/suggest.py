@@ -20,11 +20,18 @@ SUGGEST_FOLLOW_UP_PROMPT = f"""
 Suggest 0 to 2 follow-up responses that can be presented to the user.
 These responses are potential replies that the user can pose to you.
 
-Choose from the following options:
+Choose relevant responses from the following options:
 - A general relevant question no more than 10 words
 - "How does this compare to <another policy>"
 - "Format your response as a table" # Use this if your prior response involves comparisons or lists
 - "Simplify your response" # Use this if your prior response might be too verbose
+- "What are the different plans under this policy?"
+- "What are the premiums for this policy?",
+- "What are the limitations and exclusions?",
+- "Are pre-existing conditions covered?",
+- "Can I choose my preferred doctors and hospitals?",
+- "How will making a claim affect my future premiums or policy?",
+- "What is the claims process like?"
 
 Where <another policy> is one of:
 {VALID_POLICIES}

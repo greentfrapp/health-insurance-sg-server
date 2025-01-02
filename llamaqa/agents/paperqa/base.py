@@ -30,15 +30,14 @@ from ...utils.logger import CostLogger
 from ...utils.policies import VALID_POLICIES
 from .fallback import FALLBACK_FINAL_RESPONSE, FALLBACK_RESPONSE_CONTENT
 from .parser import PaperQAOutputParser
-from .prompts import PAPERQA_SYSTEM_PROMPT
+from .prompts import (FAILED_ANSWER_PROMPT, FAILED_CITATION_PROMPT,
+                      FAILED_PARSING_PROMPT, FAILED_THOUGHT_PROMPT,
+                      PAPERQA_SYSTEM_PROMPT)
 from .step import PaperQAAgentWorker
 from .suggest import suggest_follow_up
-from .utils import (
-    format_response,
-    infer_stream_chunk_is_final,
-    parse_action_response,
-    tell_llm_about_failure_in_extract_reasoning_step,
-)
+from .utils import (format_response, infer_stream_chunk_is_final,
+                    parse_action_response, parse_answer_response,
+                    tell_llm_about_failure_in_extract_reasoning_step)
 
 logger = logging.getLogger("paperqa-agent")
 
@@ -190,6 +189,8 @@ class PaperQAAgent(ReActAgent):
         step = step_queue.popleft()
         while True:
             iters += 1
+            if iters >= max_iters:
+                break
 
             if step.input is not None:
                 add_user_step_to_reasoning(
@@ -209,8 +210,9 @@ class PaperQAAgent(ReActAgent):
             )
 
             response_success = False
+            parse_success = False
             num_retries = 3
-            retry_after = 5
+            retry_after = 3
             current_retry = 0
             while not response_success:
                 try:
@@ -221,9 +223,12 @@ class PaperQAAgent(ReActAgent):
                         value = chunk.message.content[len(response_buffer) :]
                         yield value
                         response_buffer += value
-                        is_done = infer_stream_chunk_is_final(response_buffer, [])
 
                     response_buffer = parse_action_response(response_buffer)
+                    is_done = infer_stream_chunk_is_final(response_buffer)
+                    if is_done:
+                        parse_success = True
+                        response_buffer = parse_answer_response(response_buffer)
 
                     response_success = True
                 except (APIConnectionError, ServiceUnavailableError) as e:
@@ -245,9 +250,13 @@ class PaperQAAgent(ReActAgent):
                 return
 
             if not is_done:
+                self.memory.put(
+                    ChatMessage(role=MessageRole.ASSISTANT, content=response_buffer)
+                )
                 tools = worker.get_tools(task.input)
                 tools_dict = {tool.metadata.get_name(): tool for tool in tools}
 
+                parse_success = False
                 # Extract tool to yield tool description
                 try:
                     # Temporarily disable verbose to prevent repeated logging
@@ -259,6 +268,7 @@ class PaperQAAgent(ReActAgent):
                     worker._verbose = _verbose
                     reasoning_step = cast(ActionReasoningStep, current_reasoning[-1])
                     if reasoning_step.action in tools_dict:
+                        parse_success = True
                         # Populate with default kwargs and log description
                         if hasattr(
                             tools_dict[reasoning_step.action].fn, "__default_kwargs__"
@@ -276,52 +286,69 @@ class PaperQAAgent(ReActAgent):
                         }"""
                         # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
                         yield thought
+
+                        # given react prompt outputs, call tools or return response
+                        reasoning_steps, is_done = worker._process_actions(
+                            task, tools=tools, output=response_buffer, is_streaming=True
+                        )
+                        if reasoning_steps[-1].observation.startswith("Found"):
+                            thought = (
+                                "Action Output:" + reasoning_steps[-1].observation.split(".")[0]
+                            )
+                            # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
+                            yield thought
+                        task.extra_state["current_reasoning"].extend(reasoning_steps)
+
+                        step = step.get_next_step(
+                            step_id=str(uuid.uuid4()),
+                            input=None,
+                        )
                 except ValueError:
-                    pass
+                    parse_success = False
+                    self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_PARSING_PROMPT))
 
-                # given react prompt outputs, call tools or return response
-                reasoning_steps, is_done = worker._process_actions(
-                    task, tools=tools, output=response_buffer, is_streaming=True
+                # Calculate cost with final chunk
+                cost = completion_cost(
+                    completion_response=ModelResponse(
+                        model=chunk.raw.model,
+                        usage=chunk.raw._hidden_params.get("usage"),
+                    ),
+                    custom_llm_provider=chunk.raw._hidden_params.get("custom_llm_provider"),
                 )
-                if reasoning_steps[-1].observation.startswith("Found"):
-                    thought = (
-                        "Action Output:" + reasoning_steps[-1].observation.split(".")[0]
-                    )
-                    # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=thought))
-                    yield thought
-                task.extra_state["current_reasoning"].extend(reasoning_steps)
+                self.cost_logger.log_cost(cost)
 
-                step = step.get_next_step(
-                    step_id=str(uuid.uuid4()),
-                    input=None,
-                )
-
-            # Calculate cost with final chunk
-            cost = completion_cost(
-                completion_response=ModelResponse(
-                    model=chunk.raw.model,
-                    usage=chunk.raw._hidden_params.get("usage"),
-                ),
-                custom_llm_provider=chunk.raw._hidden_params.get("custom_llm_provider"),
-            )
-            self.cost_logger.log_cost(cost)
-
-            if step_by_step:
-                interrupt = input("Enter to continue or 'q' to quit: ")
-                if interrupt == "q":
-                    quit()
+            # Check citations are valid
+            final_parsing_error = False
             if is_done:
-                break
-            else:
-                if "\nThought: " in response_buffer:
-                    response_buffer = response_buffer.split("\nThought: ")[0]
-                if "```Thought: " in response_buffer:
-                    response_buffer = response_buffer.split("```Thought: ")[0] + "```"
-                self.memory.put(
-                    ChatMessage(role=MessageRole.ASSISTANT, content=response_buffer)
-                )
-            if iters >= max_iters:
-                break
+                try:
+                    final_response = response_buffer.split("Answer:")[-1].strip()
+                    format_response(
+                        query,
+                        final_response,
+                        self.toolspec,
+                        prev_document_ids=document_ids or [],
+                    )
+                except ValueError as e:
+                    print(f"Error: {e}")
+                    final_parsing_error = True
+                    error_message = str(e)
+                    self.memory.put(
+                        ChatMessage(role=MessageRole.ASSISTANT, content=response_buffer)
+                    )
+                    if error_message == "Incorrect citations":
+                        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_CITATION_PROMPT))
+                    elif error_message == "Found \"Thought:\"":
+                        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_THOUGHT_PROMPT))
+                    else:
+                        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content=FAILED_ANSWER_PROMPT))
+
+            if parse_success and not final_parsing_error:
+                if step_by_step:
+                    interrupt = input("Enter to continue or 'q' to quit: ")
+                    if interrupt == "q":
+                        quit()
+                if is_done:
+                    break
 
         final_response = response_buffer.split("Answer:")[-1].strip()
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=final_response))

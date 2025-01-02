@@ -2,16 +2,19 @@ import re
 from collections import OrderedDict
 from typing import List, Optional, cast
 
-from llama_index.core.callbacks import CallbackManager, CBEventType, EventPayload
+from llama_index.core.callbacks import (CallbackManager, CBEventType,
+                                        EventPayload)
 from llama_index.core.tools import ToolOutput
+from llama_index.llms.litellm import LiteLLM
 
 from ...tools.paperqa_tools import PaperQAToolSpec
 from ...tools.retrieve_evidence import EXAMPLE_CITATION
 from ...utils.answer import Answer
 from ...utils.context import Context
+from .prompts import FAILED_PARSING_PROMPT
 
 
-def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool:
+def infer_stream_chunk_is_final(chunk: str) -> bool:
     """Infers if a chunk from a live stream is the start of the final
     reasoning step. (i.e., and should eventually become
     ResponseReasoningStep — not part of this function's logic tho.).
@@ -23,22 +26,15 @@ def infer_stream_chunk_is_final(chunk: str, missed_chunks_storage: list) -> bool
     Returns:
         bool: Boolean on whether the chunk is the start of the final response
     """
-    latest_content = chunk
-    if latest_content:
-        # doesn't follow thought-action format
-        # keep first chunks
-        if len(latest_content) < len("Thought"):
-            missed_chunks_storage.append(chunk)
-        elif "Action:" in latest_content and "Action: None" not in latest_content:
-            return False
-        elif (
-            not latest_content.startswith("Thought:")
-            and "Thought:" not in latest_content
-        ):
-            return True
-        elif "Answer:" in latest_content:
-            missed_chunks_storage.clear()
-            return True
+    if not chunk: return False
+    # doesn't follow thought-action format
+    # keep first chunks
+    if "Action:" in chunk and "Action: None" not in chunk:
+        return False
+    elif "Thought:" not in chunk:
+        return True
+    elif "Answer:" in chunk:
+        return True
     return False
 
 
@@ -99,17 +95,17 @@ def format_response(
     docnames_str = "|".join(docnames)
     text_names = set(response.bib.keys())
     citation_group_pattern = re.compile(
-        f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\d+(, quote\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\d+((,|;) quote\\d+)*)?)*\\)"
+        f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+(, quote\s?\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+((,|;) quote\\s?\\d+)*)?)*\\)"
     )
     citation_single_pattern = re.compile(
-        f"((?P<citation>({docnames_str}) pages \\d+-\\d+),?(?P<quotes> quote\\d+((,|;) quote\\d+)*)?)((,|;) )?"
+        f"((?P<citation>({docnames_str}) pages \\d+-\\d+),?(?P<quotes> quote\\s?\\d+((,|;) quote\\s?\\d+)*)?)((,|;) )?"
     )
 
     references_list = []
 
     def create_quote_tag(match: re.Match, text_name: str):
         references_list.append(f"{text_name} {match.groupdict()['q']}")
-        return f"<doc>{text_name} {match.groupdict()['q']}</doc>"
+        return f"<doc>{text_name} {match.groupdict()['q'].replace(' ', '')}</doc>"
 
     def replace_individual_citations(match: re.Match):
         quotes_text = match.groupdict()["quotes"]
@@ -121,7 +117,7 @@ def format_response(
             return ""
         if quotes_text:
             return re.sub(
-                "(?P<q>quote\\d+)(, )?",
+                "(?P<q>quote\s?\\d+)(, )?",
                 lambda m: create_quote_tag(m, text_name),
                 quotes_text,
             )
@@ -145,6 +141,29 @@ def format_response(
 
     response.answer = re.sub(period_citation_pattern, move_period_mark, response.answer)
     response.answer = re.sub(re.compile("\\.+"), ".", response.answer)
+
+    # Raise error if answer still contains raw citations
+    if len(docnames_str):
+        answer_no_text = re.sub("<cite>.*?</cite>", "", response.answer)
+        raw_citation_pattern = re.compile(
+            fr"({docnames_str})"
+        )
+        match = re.search(raw_citation_pattern, answer_no_text)
+        if match:
+            print(f"\033[38;5;196m{list(docnames)}\033[0m")
+            print(f"\033[38;5;196m{answer_no_text}\033[0m")
+            raise ValueError("Incorrect citations")
+        if content_has_references(answer_no_text):
+            print(f"\033[38;5;196m{list(docnames)}\033[0m")
+            print(f"\033[38;5;196m{answer_no_text}\033[0m")
+            raise ValueError("Incorrect citations")
+    elif content_has_references(response.answer):
+        print(f"\033[38;5;196m{list(docnames)}\033[0m")
+        print(f"\033[38;5;196m{response.answer}\033[0m")
+        raise ValueError("Incorrect citations")
+    # Raise error if answer contains "Thought:"
+    if response.answer.startswith("Thought:") or "\nThought:" in response.answer:
+        raise ValueError("Found \"Thought:\"")
 
     # Format response
     references = []
@@ -184,20 +203,12 @@ def tell_llm_about_failure_in_extract_reasoning_step(
     we will emit a Tool Output that we prepared (at initialization time) to the LLM, so that
     the LLM can be more cooperative in its next generation.
     """
-    message = """Error: Could not parse output. Please follow the thought-action-input format. Try again.
-Maybe you should try calling the retrieve_evidence_by_query or retrieve_policy_overview tool.
-Remember that the format should be
-```
-Thought: I need to use a tool to help me answer the question.
-Action: tool name if using a tool.
-Action Input: the input to the tool, in a JSON format representing the kwargs (e.g. {{"input": "hello world", "num_beams": 5}})
-```
-"""
+
     dummy_tool_output = ToolOutput(
-        content=message,
+        content=FAILED_PARSING_PROMPT,
         tool_name="unknown",
         raw_input={},
-        raw_output=message,
+        raw_output=FAILED_PARSING_PROMPT,
     )
     with callback_manager.event(
         CBEventType.FUNCTION_CALL,
@@ -221,3 +232,25 @@ def parse_action_response(response: str):
         return match[0]
     else:
         return response
+
+
+def parse_answer_response(response: str):
+    answer_pattern = re.compile(r"(Thought:.*?\n+Answer:.*?)($|Thought:)", re.DOTALL)
+    match = re.search(answer_pattern, response)
+    if match and match.groups():
+        return match.groups()[0]
+    else:
+        return response
+
+
+def content_has_references(content: str):
+    llm = LiteLLM("gemini/gemini-1.5-flash-002")
+    response = llm.complete(
+        f"""
+Does the text below have any citations. Answer only YES or NO.
+
+{content}
+"""
+    )
+
+    return "yes" in str(response).lower()

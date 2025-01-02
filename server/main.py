@@ -1,16 +1,17 @@
+import asyncio
 import logging
 from typing import List, Optional
+from uuid import uuid4
 
+import llamaqa
 import nest_asyncio
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from llama_index.core.base.llms.types import ChatMessage
-from pydantic import BaseModel
-
-import llamaqa
 from llamaqa.agents.paperqa.base import PaperQAAgent
+from pydantic import BaseModel
 
 load_dotenv()
 nest_asyncio.apply()
@@ -28,6 +29,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+conversations = {}
 
 
 class QueryPayload(BaseModel):
@@ -71,6 +75,33 @@ async def post_stream_query(payload: QueryPayload):
             payload.history,
             payload.current_policy,
             payload.document_ids,
+        ),
+        media_type="text/event-stream",
+    )
+
+
+@app.post("/query")
+async def post_query(payload: QueryPayload):
+    conv_id = str(uuid4())
+    conversations[conv_id] = {
+        "query": payload.query,
+        "history": payload.history,
+        "current_document": payload.current_policy,
+        "document_ids": payload.document_ids,
+    }
+    return {"id": conv_id}
+
+
+@app.get("/stream/{stream_id}")
+async def stream(stream_id: str):
+    if stream_id not in conversations:
+        raise ValueError(f"Invalid id: {stream_id}")
+    kwargs = conversations.pop(stream_id)
+    agent = PaperQAAgent.from_config()
+    return StreamingResponse(
+        stream_thoughts_helper(
+            agent,
+            **kwargs,
         ),
         media_type="text/event-stream",
     )
