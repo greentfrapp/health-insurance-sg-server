@@ -176,7 +176,6 @@ class PaperQAAgent(ReActAgent):
                         content=f'The user is currently looking at "{current_document}". This might be relevant to their request.',
                     )
                 )
-        self.memory.put(ChatMessage(role=MessageRole.USER, content=query))
 
         worker = cast(PaperQAAgentWorker, self.agent_worker)
         task = self.create_task(query)
@@ -187,6 +186,7 @@ class PaperQAAgent(ReActAgent):
         max_iters = 10
         step_queue = self.state.get_step_queue(task.task_id)
         step = step_queue.popleft()
+
         while True:
             iters += 1
             if iters >= max_iters:
@@ -240,6 +240,10 @@ class PaperQAAgent(ReActAgent):
                         + f"\nRetrying ({current_retry}/{num_retries}) after {retry_after}s..."
                     )
                     await asyncio.sleep(retry_after)
+
+            if iters == 1:
+                self.memory.put(ChatMessage(role=MessageRole.USER, content=query))
+            
             if not response_success:
                 self.memory.put(
                     ChatMessage(
