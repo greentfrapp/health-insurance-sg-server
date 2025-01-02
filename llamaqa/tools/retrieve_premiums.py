@@ -18,9 +18,9 @@ VALID_COMPANIES = [
 VALID_COVERAGE = ["Basic", "Standard Class B1", "Class B1", "Class A", "Private"]
 VALID_PLANS = [
     "MediShield Life",
-    "Enchanced IncomeShield Preferred",
-    "Enchanced IncomeShield Basic Advantage",
-    "Enchanced IncomeShield Basic",
+    "Enhanced IncomeShield Preferred",
+    "Enhanced IncomeShield Basic Advantage",
+    "Enhanced IncomeShield Basic",
     "IncomeShield Standard Plan",
     "AIA HealthShield Gold Max A",
     "AIA HealthShield Gold Max B",
