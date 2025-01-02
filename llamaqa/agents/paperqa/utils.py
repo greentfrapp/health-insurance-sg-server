@@ -95,7 +95,7 @@ def format_response(
     docnames_str = "|".join(docnames)
     text_names = set(response.bib.keys())
     citation_group_pattern = re.compile(
-        f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+(, quote\s?\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+((,|;) quote\\s?\\d+)*)?)*\\)"
+        f"\\(({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+(, quote\\s?\\d+)*)?((,|;) ({docnames_str}) pages \\d+-\\d+,?( quote\\s?\\d+((,|;) quote\\s?\\d+)*)?)*\\)"
     )
     citation_single_pattern = re.compile(
         f"((?P<citation>({docnames_str}) pages \\d+-\\d+),?(?P<quotes> quote\\s?\\d+((,|;) quote\\s?\\d+)*)?)((,|;) )?"
@@ -117,7 +117,7 @@ def format_response(
             return ""
         if quotes_text:
             return re.sub(
-                "(?P<q>quote\s?\\d+)(, )?",
+                "(?P<q>quote\\s?\\d+)(, )?",
                 lambda m: create_quote_tag(m, text_name),
                 quotes_text,
             )
