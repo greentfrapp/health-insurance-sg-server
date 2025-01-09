@@ -244,7 +244,7 @@ def parse_answer_response(response: str):
 
 
 def content_has_references(content: str):
-    llm = LiteLLM("gemini/gemini-1.5-flash-002")
+    llm = LiteLLM("gemini/gemini-2.0-flash-exp")
     response = llm.complete(
         f"""
 Does the text below have any citations. Answer only YES or NO.

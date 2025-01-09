@@ -106,9 +106,9 @@ class PaperQAAgent(ReActAgent):
             "embedding_model", "gemini/text-embedding-004"
         )
         summary_llm_model_name = kwargs.get(
-            "summary_llm_model", "gemini/gemini-1.5-flash-002"
+            "summary_llm_model", "gemini/gemini-2.0-flash-exp"
         )
-        llm_model_name = kwargs.get("llm_model", "gemini/gemini-1.5-flash-002")
+        llm_model_name = kwargs.get("llm_model", "gemini/gemini-2.0-flash-exp")
         toolspec = kwargs.get("toolspec")
         cost_logger = CostLogger()
 

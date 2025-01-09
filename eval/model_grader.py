@@ -2,7 +2,6 @@ import json
 from typing import AsyncGenerator, Optional
 
 import nest_asyncio
-
 from llamaqa.agents.paperqa.base import PaperQAAgent
 from llamaqa.llms.litellm_model import LiteLLMModel
 from llamaqa.llms.llm_model import LLMModel
@@ -65,7 +64,7 @@ class ModelGrader:
     def __init__(self, llm: Optional[LLMModel] = None):
         self.cost_logger = CostLogger("modelgrader-cost")
         self.llm = llm or LiteLLMModel(
-            name="gemini/gemini-1.5-flash-002", cost_logger=self.cost_logger
+            name="gemini/gemini-2.0-flash-exp", cost_logger=self.cost_logger
         )
 
     async def basic_model_eval(self, response: str, condition: str):
