@@ -55,37 +55,40 @@ Thought: <thought process>
 
 
 async def suggest_follow_up(agent):
-    worker = cast(PaperQAAgentWorker, agent.agent_worker)
-    task = agent.create_task(SUGGEST_FOLLOW_UP_PROMPT)
-    step_queue = agent.state.get_step_queue(task.task_id)
-    step = step_queue.popleft()
+    try:
+        worker = cast(PaperQAAgentWorker, agent.agent_worker)
+        task = agent.create_task(SUGGEST_FOLLOW_UP_PROMPT)
+        step_queue = agent.state.get_step_queue(task.task_id)
+        step = step_queue.popleft()
 
-    if step.input is not None:
-        add_user_step_to_reasoning(
-            step,
-            task.extra_state["new_memory"],
-            task.extra_state["current_reasoning"],
-            verbose=worker._verbose,
+        if step.input is not None:
+            add_user_step_to_reasoning(
+                step,
+                task.extra_state["new_memory"],
+                task.extra_state["current_reasoning"],
+                verbose=worker._verbose,
+            )
+
+        tools = worker.get_tools(task.input)
+
+        input_chat = worker._react_chat_formatter.format(
+            tools,
+            chat_history=task.memory.get(input=task.input)
+            + task.extra_state["new_memory"].get_all(),
+            current_reasoning=task.extra_state["current_reasoning"],
         )
 
-    tools = worker.get_tools(task.input)
+        chat_stream = worker._llm.stream_chat(input_chat)
 
-    input_chat = worker._react_chat_formatter.format(
-        tools,
-        chat_history=task.memory.get(input=task.input)
-        + task.extra_state["new_memory"].get_all(),
-        current_reasoning=task.extra_state["current_reasoning"],
-    )
+        response_buffer = ""
+        for chunk in chat_stream:
+            value = chunk.message.content[len(response_buffer) :]
+            response_buffer += value
 
-    chat_stream = worker._llm.stream_chat(input_chat)
-
-    response_buffer = ""
-    for chunk in chat_stream:
-        value = chunk.message.content[len(response_buffer) :]
-        response_buffer += value
-
-    suggestions = llm_parse_json(response_buffer)
-    if type(suggestions) is not AttributedList:
+        suggestions = llm_parse_json(response_buffer)
+        if type(suggestions) is not AttributedList:
+            return []
+        else:
+            return suggestions[:2]
+    except:
         return []
-    else:
-        return suggestions[:2]
