@@ -175,7 +175,7 @@ The coverage can be one of:
 
 Args:
     ages (List[int]) = None: The ages to retrieve premiums. If None, defaults to [10, 30, 50, 70].
-    policies (List[str]) = None: A list of policies from {VALID_POLICIES} or None. If None, defaults to all.
+    policies (List[str]) = None: A list of up to 3 policies from {VALID_POLICIES} or None. If None, defaults to all.
     plans (List[str]) = None: A list of plans from {VALID_PLANS} or None. If None, defaults to all.
     coverages (List[str]) = None: A list of coverages from {VALID_COVERAGE} or None. Ignored if plans are provided. If None, defaults to all.
 """,
@@ -211,6 +211,8 @@ Args:
             "Singlife Shield": "Singlife",
         }
         policies = policies or []
+        if len(policies) > 3:
+            return "Only enter up to 3 policies for the retrieve_premiums tool"
         companies = list(set(policies_map.get(p) for p in policies))
         # Default ages
         ages = ages or [10, 30, 50, 70]
